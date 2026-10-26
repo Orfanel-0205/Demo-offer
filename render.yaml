@@ -1,0 +1,22 @@
+# Render Blueprint (optional)
+# Creates the free static site with the right settings in one step:
+#   Render dashboard → New + → Blueprint → select this repository → Apply.
+# You can also create the site by hand: New + → Static Site, publish directory "site".
+services:
+  - type: web
+    runtime: static
+    name: harbor-hearth-demo
+    # No build step: the site is plain HTML, CSS and JavaScript.
+    buildCommand: echo "No build step needed"
+    # Only the site/ folder is published (docs, tools and videos stay private to the repo).
+    staticPublishPath: ./site
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN

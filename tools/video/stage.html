@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Video stage</title>
+    <!-- Recording stage used by tools/record-videos.mjs. Not part of the website. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..800&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&display=swap" />
+    <style>
+      :root {
+        --cream: #f7f1e8;
+        --sand: #efe6d8;
+        --ink: #24231f;
+        --green: #1e3b32;
+        --terra: #a3472a;
+        --muted: #5a554c;
+        --agency-ink: #17181a;
+        --agency-accent: #2f55c4;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        overflow: hidden;
+        background: var(--sand);
+        color: var(--ink);
+        font-family: "Figtree", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .stage { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+      .arch { position: absolute; background: var(--cream); border-radius: 999px 999px 28px 28px / 46% 46% 28px 28px; }
+
+      .cap { position: absolute; z-index: 2; }
+      .cap__eyebrow {
+        margin: 0 0 10px;
+        color: var(--terra);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      .cap__lines { position: relative; }
+      .caption {
+        position: absolute;
+        left: 0; right: 0; top: 0;
+        margin: 0;
+        color: var(--green);
+        font-family: "Fraunces", Georgia, serif;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        line-height: 1.12;
+        text-wrap: balance;
+      }
+
+      .device { position: absolute; z-index: 1; }
+      .phone {
+        padding: 10px;
+        border-radius: 46px;
+        background: #141414;
+        box-shadow: 0 30px 60px rgb(36 35 31 / 0.25), 0 0 0 1.5px #3a3a3a inset;
+      }
+      .phone .screen { border-radius: 36px; }
+      .browser {
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 30px 70px rgb(36 35 31 / 0.22), 0 0 0 1px rgb(36 35 31 / 0.08);
+        overflow: hidden;
+      }
+      .browser__bar {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        height: 32px;
+        padding: 0 14px;
+        background: #ece9e3;
+        border-bottom: 1px solid #ddd8cf;
+      }
+      .browser__bar i { width: 10px; height: 10px; border-radius: 50%; background: #d3cec5; }
+      .browser__url {
+        margin-left: 18px;
+        padding: 3px 14px;
+        border-radius: 999px;
+        background: #fff;
+        color: #6b665d;
+        font-size: 11px;
+        font-weight: 500;
+      }
+      .screen { position: relative; overflow: hidden; background: var(--cream); }
+      .screen iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; background: var(--cream); }
+
+      .tap {
+        position: absolute;
+        z-index: 5;
+        width: 54px; height: 54px;
+        margin: -27px 0 0 -27px;
+        border-radius: 50%;
+        background: rgb(255 255 255 / 0.55);
+        border: 2.5px solid rgb(30 59 50 / 0.85);
+        box-shadow: 0 4px 18px rgb(0 0 0 / 0.25);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .foot {
+        position: absolute;
+        z-index: 2;
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.02em;
+      }
+
+      /* Full-screen title cards */
+      .card {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .card--intro { background: var(--cream); color: var(--green); }
+      .card--intro .mark {
+        width: 64px; height: 64px;
+        margin-bottom: 26px;
+        border-radius: 50% 50% 8px 8px;
+        background: var(--green);
+        color: var(--cream);
+        display: grid; place-items: center;
+        font: 600 30px "Fraunces", serif;
+      }
+      .card--intro h1 { margin: 0; font: 600 54px/1.02 "Fraunces", serif; letter-spacing: -0.025em; }
+      .card--intro .sub { margin: 16px 0 0; color: var(--terra); font: italic 400 24px/1.3 "Fraunces", serif; }
+      .card--intro .small { margin: 28px 0 0; color: var(--muted); font-size: 15px; line-height: 1.5; }
+      .card--intro .pill {
+        display: inline-block;
+        margin-top: 18px;
+        padding: 6px 12px;
+        border-radius: 4px;
+        background: #f1dfd4;
+        color: #7d351e;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .card--end { background: var(--agency-ink); color: #fff; }
+      .card--end .brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+      .card--end .brand::before { content: ""; width: 16px; height: 16px; border-radius: 3px; background: var(--agency-accent); box-shadow: 6px 6px 0 #fff; margin-right: 8px; }
+      .card--end h2 { margin: 26px 0 0; font: 800 44px/1.05 "Figtree", sans-serif; letter-spacing: -0.03em; }
+      .card--end .lead { margin: 14px 0 0; color: #c9cbd1; font-size: 18px; line-height: 1.45; }
+      .pkgs { display: grid; gap: 12px; margin-top: 28px; }
+      .pkg {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: baseline;
+        gap: 4px 16px;
+        padding: 16px 18px;
+        border-radius: 10px;
+        background: #22242a;
+        border: 1px solid #33363d;
+      }
+      .pkg--featured { background: #fff; color: var(--agency-ink); border-color: #fff; }
+      .pkg__name { font-size: 18px; font-weight: 700; }
+      .pkg__price { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+      .pkg__price small { font-size: 13px; font-weight: 500; color: #9a9da5; margin-left: 4px; }
+      .pkg--featured .pkg__price small { color: #5d6067; }
+      .pkg__badge { grid-column: 1 / -1; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #a9bfff; }
+      .pkg--featured .pkg__badge { color: var(--agency-accent); }
+      .fine { margin: 24px 0 0; color: #9a9da5; font-size: 13px; line-height: 1.55; }
+      .fine strong { color: #e4e5e8; font-weight: 600; }
+
+      /* ---------- Vertical (phone) layout: 540 × 960 ---------- */
+      .v .arch { left: 34px; top: 186px; width: 472px; height: 770px; }
+      .v .cap { left: 36px; right: 36px; top: 40px; }
+      .v .cap__lines { height: 112px; }
+      .v .caption { font-size: 32px; }
+      .v .device.phone { left: 104px; top: 190px; }
+      .v .foot { left: 0; right: 0; bottom: 18px; text-align: center; }
+      .v .card { padding: 0 44px; }
+
+      /* ---------- Landscape (desktop + phone) layout: 1280 × 720 ---------- */
+      .h .arch { left: 930px; top: 90px; width: 330px; height: 660px; }
+      .h .cap { left: 48px; right: 360px; top: 26px; }
+      .h .cap__lines { height: 44px; }
+      .h .caption { font-size: 31px; white-space: nowrap; }
+      .h .device.browser { left: 48px; top: 112px; }
+      .h .device.phone { left: 968px; top: 126px; padding: 8px; border-radius: 38px; }
+      .h .device.phone .screen { border-radius: 30px; }
+      .h .foot { right: 48px; bottom: 16px; }
+      .h .card { padding: 0 120px; }
+      .h .card--intro h1 { font-size: 64px; }
+      .h .card--end { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 0 64px; }
+      .h .card--end .pkgs { margin-top: 0; }
+    </style>
+  </head>
+  <body>
+    <div class="stage" id="stage">
+      <div class="arch"></div>
+      <header class="cap">
+        <p class="cap__eyebrow">Sample restaurant website · RestaurantLaunch</p>
+        <div class="cap__lines">
+          <p class="caption" id="capA"></p>
+          <p class="caption" id="capB"></p>
+        </div>
+      </header>
+      <div id="devices"></div>
+      <div class="tap" id="tap"></div>
+      <p class="foot">Harbor &amp; Hearth Kitchen is a fictional restaurant created for this demo.</p>
+
+      <section class="card card--intro" id="card-intro">
+        <div>
+          <div class="mark">H</div>
+          <h1>Harbor &amp; Hearth Kitchen</h1>
+          <p class="sub">A sample restaurant website</p>
+          <p class="small">Designed by RestaurantLaunch to show what an independent restaurant's site can look like.</p>
+          <span class="pill">Fictional restaurant · demo content</span>
+        </div>
+      </section>
+
+      <section class="card card--end" id="card-end">
+        <div>
+          <div class="brand" id="end-brand"></div>
+          <h2 id="end-heading"></h2>
+          <p class="lead">Menu, hours, location and contact details in one place, linked to the services the restaurant already uses.</p>
+        </div>
+        <div>
+          <div class="pkgs" id="end-pkgs"></div>
+          <p class="fine">
+            <strong>Introductory prices being tested.</strong> Domain registration and third-party services are separate.
+            Final scope is confirmed in writing before work begins. No guaranteed results.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <script src="/agency.config.js"></script>
+    <script>
+      (function () {
+        var params = new URLSearchParams(location.search);
+        var layout = params.get("layout") === "h" ? "h" : "v";
+        var stage = document.getElementById("stage");
+        stage.classList.add(layout);
+
+        // Device definitions: iframe CSS size + scale on the stage.
+        var DEVICES = layout === "v"
+          ? [{ id: "phone", kind: "phone", w: 390, h: 844, scale: 0.8 }]
+          : [
+              { id: "desktop", kind: "browser", w: 1366, h: 820, scale: 880 / 1366 },
+              { id: "phone", kind: "phone", w: 390, h: 844, scale: 0.606 },
+            ];
+
+        var host = document.getElementById("devices");
+        DEVICES.forEach(function (d) {
+          var sw = Math.round(d.w * d.scale), sh = Math.round(d.h * d.scale);
+          var wrap = document.createElement("div");
+          wrap.className = "device " + d.kind;
+          wrap.innerHTML =
+            (d.kind === "browser" ? '<div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">Sample restaurant website</span></div>' : "") +
+            '<div class="screen" style="width:' + sw + "px;height:" + sh + 'px"><iframe id="' + d.id + '" title="' + d.id + ' preview" src="/index.html" style="width:' +
+            d.w + "px;height:" + d.h + "px;transform:scale(" + d.scale + ')"></iframe></div>';
+          host.appendChild(wrap);
+        });
+
+        // End card content comes from site/agency.config.js so prices stay in sync.
+        var A = window.AGENCY_CONFIG || { name: "RestaurantLaunch", heading: "", packages: [] };
+        document.getElementById("end-brand").textContent = A.name;
+        document.getElementById("end-heading").textContent = A.heading;
+        document.getElementById("end-pkgs").innerHTML = A.packages
+          .map(function (p) {
+            return '<div class="pkg' + (p.featured ? " pkg--featured" : "") + '"><span class="pkg__badge">' + p.badge + '</span><span class="pkg__name">' +
+              p.name + '</span><span class="pkg__price">' + p.price + "<small>" + p.cadence + "</small></span></div>";
+          })
+          .join("");
+
+        var capA = document.getElementById("capA"), capB = document.getElementById("capB");
+        var tap = document.getElementById("tap");
+
+        window.stage = {
+          devices: DEVICES,
+          ready: function () {
+            return Promise.all(
+              DEVICES.map(function (d) {
+                var f = document.getElementById(d.id);
+                return new Promise(function (res) {
+                  if (f.contentDocument && f.contentDocument.readyState === "complete") res();
+                  else f.addEventListener("load", res, { once: true });
+                });
+              })
+            ).then(function () { return document.fonts.ready; });
+          },
+          doc: function (id) { return document.getElementById(id).contentDocument; },
+          win: function (id) { return document.getElementById(id).contentWindow; },
+
+          // Where an element inside a device appears on the stage.
+          pointOf: function (id, selector) {
+            var f = document.getElementById(id);
+            var d = DEVICES.filter(function (x) { return x.id === id; })[0];
+            var el = f.contentDocument.querySelector(selector);
+            var r = el.getBoundingClientRect();
+            var s = f.getBoundingClientRect();
+            return { x: s.left + (r.left + r.width / 2) * d.scale, y: s.top + (r.top + r.height / 2) * d.scale };
+          },
+
+          scrollTargetOf: function (id, selector, offset) {
+            var w = this.win(id), doc = this.doc(id);
+            var el = doc.querySelector(selector);
+            var header = doc.querySelector(".site-header");
+            var y = el.getBoundingClientRect().top + w.scrollY - (header ? header.offsetHeight : 0) + (offset || 0);
+            var max = doc.documentElement.scrollHeight - w.innerHeight;
+            return Math.max(0, Math.min(max, Math.round(y)));
+          },
+
+          render: function (s) {
+            Object.keys(s.scroll).forEach(function (id) {
+              var w = window.stage.win(id);
+              if (Math.abs(w.scrollY - s.scroll[id]) > 0.5) w.scrollTo({ top: s.scroll[id], behavior: "instant" });
+            });
+            (s.elScroll || []).forEach(function (e) {
+              var el = window.stage.doc(e.id).querySelector(e.selector);
+              if (el) el.scrollLeft = e.x;
+            });
+            capA.textContent = s.caption.prev;
+            capB.textContent = s.caption.text;
+            // First half: old caption fades out and lifts; second half: new one fades in.
+            var out = Math.min(1, s.caption.t * 2);
+            var inn = Math.max(0, s.caption.t * 2 - 1);
+            capA.style.opacity = String(1 - out);
+            capB.style.opacity = String(inn);
+            capA.style.transform = "translateY(" + (-8 * out) + "px)";
+            capB.style.transform = "translateY(" + (8 * (1 - inn)) + "px)";
+            if (s.tap) {
+              tap.style.left = s.tap.x + "px";
+              tap.style.top = s.tap.y + "px";
+              tap.style.opacity = String(s.tap.opacity);
+              tap.style.transform = "scale(" + s.tap.scale + ")";
+            } else {
+              tap.style.opacity = "0";
+            }
+            document.getElementById("card-intro").style.opacity = String(s.cards.intro);
+            document.getElementById("card-end").style.opacity = String(s.cards.end);
+          },
+        };
+      })();
+    </script>
+  </body>
+</html>

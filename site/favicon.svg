@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Arch-shaped "hearth" mark. Change the two colors to match a client's brand. -->
+  <path d="M6 60V30a26 26 0 0 1 52 0v30z" fill="#1E3B32"/>
+  <path d="M24 46c0-6 4-9 5-14 3 3 4 6 4 8 1-2 2-4 2-6 3 3 5 7 5 12a8 8 0 0 1-16 0z" fill="#E08A5B"/>
+</svg>

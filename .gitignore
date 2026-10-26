@@ -1,0 +1,8 @@
+# Desktop tool dependencies and generated test screenshots
+tools/node_modules/
+tools/output/
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini
