@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title>Video stage</title>
     <!-- Recording stage used by tools/record-videos.mjs. Not part of the website. -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..800&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=Figtree:wght@400..800&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Plus+Jakarta+Sans:wght@400..800&display=swap" />
     <style>
       :root {
         --cream: #f7f1e8;
@@ -194,12 +194,44 @@
       .h .card--end { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 0 64px; }
       .h .card--end .pkgs { margin-top: 0; }
     </style>
+    <style>
+      /* Stage colors follow the demo being recorded */
+      .stage { --stage-bg: var(--sand); --stage-arch: var(--cream); --cap-color: var(--green); --cap-font: "Fraunces", Georgia, serif; --cap-case: none; --eyebrow: var(--terra); background: var(--stage-bg); }
+      .stage.demo-auto-repair { --stage-bg: #e5e7eb; --stage-arch: #f3f4f6; --cap-color: #1f2937; --cap-font: "Barlow Condensed", sans-serif; --cap-case: uppercase; --eyebrow: #b3390a; }
+      .arch { background: var(--stage-arch); }
+      .cap__eyebrow { color: var(--eyebrow); }
+      .caption { color: var(--cap-color); font-family: var(--cap-font); text-transform: var(--cap-case); }
+      .demo-auto-repair .caption { font-weight: 700; letter-spacing: 0.005em; }
+      .demo-auto-repair .v .caption, .v.demo-auto-repair .caption { font-size: 36px; }
+
+      /* Intro card for the auto repair demo */
+      .demo-auto-repair .card--intro { background: #1f2937; color: #fff; }
+      .demo-auto-repair .card--intro .mark { background: #b3390a; border-radius: 8px; color: #fff; font: 700 32px "Barlow Condensed", sans-serif; }
+      .demo-auto-repair .card--intro h1 { font: 700 60px/1 "Barlow Condensed", sans-serif; text-transform: uppercase; letter-spacing: 0; }
+      .demo-auto-repair .card--intro .sub { color: #fb923c; font: 600 26px/1.3 "Barlow Condensed", sans-serif; font-style: normal; }
+      .demo-auto-repair .card--intro .small { color: #d1d5db; font-family: "Barlow", sans-serif; }
+      .demo-auto-repair .card--intro .pill { background: #374151; color: #f3f4f6; }
+
+      /* End card in Bright Site Tech colors */
+      .card--end { background: #0b1b33; font-family: "Plus Jakarta Sans", sans-serif; }
+      .card--end .brand img { display: block; height: 64px; width: auto; }
+      .card--end .brand::before { display: none; }
+      .card--end h2 { font-family: "Plus Jakarta Sans", sans-serif; }
+      .card--end .lead { color: #c9d3e3; }
+      .card--end .pkg { background: #13284a; border-color: #1d3a66; }
+      .card--end .pkg__badge { color: #ffb020; }
+      .card--end .pkg--featured { background: #ffb020; border-color: #ffb020; color: #0b1b33; }
+      .card--end .pkg--featured .pkg__badge { color: #0b1b33; }
+      .card--end .pkg--featured .pkg__price small { color: #3d3420; }
+      .card--end .fine { color: #a9b6ca; }
+      .card--end .fine strong { color: #fff; }
+    </style>
   </head>
   <body>
     <div class="stage" id="stage">
       <div class="arch"></div>
       <header class="cap">
-        <p class="cap__eyebrow">Sample restaurant website · RestaurantLaunch</p>
+        <p class="cap__eyebrow" id="cap-eyebrow">Sample website · Bright Site Tech</p>
         <div class="cap__lines">
           <p class="caption" id="capA"></p>
           <p class="caption" id="capB"></p>
@@ -207,15 +239,15 @@
       </header>
       <div id="devices"></div>
       <div class="tap" id="tap"></div>
-      <p class="foot">Harbor &amp; Hearth Kitchen is a fictional restaurant created for this demo.</p>
+      <p class="foot" id="stage-foot"></p>
 
       <section class="card card--intro" id="card-intro">
         <div>
-          <div class="mark">H</div>
-          <h1>Harbor &amp; Hearth Kitchen</h1>
-          <p class="sub">A sample restaurant website</p>
-          <p class="small">Designed by RestaurantLaunch to show what an independent restaurant's site can look like.</p>
-          <span class="pill">Fictional restaurant · demo content</span>
+          <div class="mark" id="intro-mark"></div>
+          <h1 id="intro-title"></h1>
+          <p class="sub" id="intro-sub"></p>
+          <p class="small" id="intro-small"></p>
+          <span class="pill" id="intro-pill"></span>
         </div>
       </section>
 
@@ -223,7 +255,7 @@
         <div>
           <div class="brand" id="end-brand"></div>
           <h2 id="end-heading"></h2>
-          <p class="lead">Menu, hours, location and contact details in one place, linked to the services the restaurant already uses.</p>
+          <p class="lead">Your services, prices, hours and contact details in one place you own, linked to the tools you already use.</p>
         </div>
         <div>
           <div class="pkgs" id="end-pkgs"></div>
@@ -240,6 +272,27 @@
       (function () {
         var params = new URLSearchParams(location.search);
         var layout = params.get("layout") === "h" ? "h" : "v";
+        var DEMO = params.get("demo") || "restaurant";
+        var INTRO = {
+          restaurant: {
+            mark: "H", title: "Harbor & Hearth Kitchen", sub: "A sample restaurant website",
+            small: "Designed by Bright Site Tech to show what an independent restaurant's website can look like.",
+            pill: "Fictional restaurant \u00b7 demo content", eyebrow: "Sample restaurant website \u00b7 Bright Site Tech",
+            foot: "Harbor & Hearth Kitchen is a fictional restaurant created for this demo.",
+          },
+          "auto-repair": {
+            mark: "C", title: "Copperline Auto Care", sub: "A sample auto repair website",
+            small: "Designed by Bright Site Tech to show what an independent repair shop's website can look like.",
+            pill: "Fictional shop \u00b7 demo content", eyebrow: "Sample auto repair website \u00b7 Bright Site Tech",
+            foot: "Copperline Auto Care is a fictional auto repair shop created for this demo.",
+          },
+        }[DEMO];
+        document.getElementById("stage").classList.add("demo-" + DEMO);
+        ["mark", "title", "sub", "small", "pill"].forEach(function (k) {
+          document.getElementById("intro-" + k).textContent = INTRO[k];
+        });
+        document.getElementById("cap-eyebrow").textContent = INTRO.eyebrow;
+        document.getElementById("stage-foot").textContent = INTRO.foot;
         var stage = document.getElementById("stage");
         stage.classList.add(layout);
 
@@ -257,16 +310,16 @@
           var wrap = document.createElement("div");
           wrap.className = "device " + d.kind;
           wrap.innerHTML =
-            (d.kind === "browser" ? '<div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">Sample restaurant website</span></div>' : "") +
-            '<div class="screen" style="width:' + sw + "px;height:" + sh + 'px"><iframe id="' + d.id + '" title="' + d.id + ' preview" src="/index.html" style="width:' +
+            (d.kind === "browser" ? '<div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">Sample website by Bright Site Tech</span></div>' : "") +
+            '<div class="screen" style="width:' + sw + "px;height:" + sh + 'px"><iframe id="' + d.id + '" title="' + d.id + ' preview" src="/demos/' + DEMO + '/" style="width:' +
             d.w + "px;height:" + d.h + "px;transform:scale(" + d.scale + ')"></iframe></div>';
           host.appendChild(wrap);
         });
 
         // End card content comes from site/agency.config.js so prices stay in sync.
-        var A = window.AGENCY_CONFIG || { name: "RestaurantLaunch", heading: "", packages: [] };
-        document.getElementById("end-brand").textContent = A.name;
-        document.getElementById("end-heading").textContent = A.heading;
+        var A = window.AGENCY_CONFIG || { name: "Bright Site Tech", packages: [] };
+        document.getElementById("end-brand").innerHTML = '<img src="/assets/brand/logo-white.svg" alt="">';
+        document.getElementById("end-heading").textContent = (A.demoPanel && A.demoPanel.heading) || "Want a website like this?";
         document.getElementById("end-pkgs").innerHTML = A.packages
           .map(function (p) {
             return '<div class="pkg' + (p.featured ? " pkg--featured" : "") + '"><span class="pkg__badge">' + p.badge + '</span><span class="pkg__name">' +

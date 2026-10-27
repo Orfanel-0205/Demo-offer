@@ -1,59 +1,89 @@
-# 3 · Customize the template for a paying restaurant
+# 3 · Customize a template for a paying client
 
-Goal: turn the demo into a real restaurant's website **without touching the component code**. Most of the work happens in `site/config.js`, plus a few lines in `site/index.html` and the photos in `site/images/`.
+Goal: turn a sample design into a real business's website **without touching the template code**. Almost everything happens in one file, the demo's `config.js`, plus the photos and a few lines in `index.html`.
 
-Have the completed [onboarding checklist](07-client-onboarding-checklist.md) in hand first. Use only information and photos the owner supplied or approved.
+Have the completed [onboarding checklist](09-client-onboarding-checklist.md) in hand first. Use only information and photos the owner supplied or approved.
 
 ---
 
-## Step 0: Make a copy for the client (once per client)
+## Step 0: Pick the closest demo and copy the project
 
-Keep this demo repository untouched and create one repository per client.
+| Client | Start from |
+| --- | --- |
+| Restaurant, café, bakery, food truck | `site/demos/restaurant` |
+| Auto repair, mechanic, tires, trades, home services, salon or barber with a price list | `site/demos/auto-repair` |
 
-1. On GitHub, open **Demo-offer** → **Settings** → tick **Template repository** (only needed once).
-2. Back on the repository page, tap **Use this template** → **Create a new repository**.
-3. Name it after the client (e.g. `tonys-pizzeria-site`). Choose **Private** unless you have a reason to make it public.
-4. In Render, create a **new Static Site** from the new repository (same settings as [guide 1](01-preview-and-deploy-from-your-phone.md), publish directory `site`). Its `onrender.com` link is your **private preview** to send the owner.
+See the [industry design playbook](05-industry-design-playbook.md) for colors, fonts and must-have sections per industry.
+
+1. On GitHub, open **Demo-offer** → **Settings** → tick **Template repository** (once).
+2. On the repository page, tap **Use this template** → **Create a new repository**. Name it after the client (e.g. `tonys-pizzeria-site`) and choose **Private**.
+3. In Render: **New + → Static Site** → the new repository →
+   - **Publish Directory:** `site/demos/restaurant` (or `site/demos/auto-repair`)
+   - **Build Command:** empty (or `echo "no build needed"` if required)
+4. Render gives you an `onrender.com` link. That's the client's **private preview**, showing only their website, not your studio site.
+
+> Each demo folder is a complete website: `index.html`, `config.js`, `images/` and its own copy of the template code in `engine/`. That's why you can publish just that folder.
+
+From here on, all paths are inside that demo folder (e.g. `site/demos/restaurant/`).
 
 ## Step 1: Switch off demo mode
 
-In `site/config.js`:
+In `config.js`:
 
 ```js
 demoMode: false,
 ```
 
-This removes every "Sample/Demo" label, the top banner, the stock-photo captions and the RestaurantLaunch pricing section, and **hides any button whose link is empty**. You can delete `site/agency.config.js` and its `<script>` line in `index.html`, but leaving them does no harm.
+…and **delete the whole `demoAgency: { … },` block** (the client's site shouldn't load anything from your studio).
 
-## Step 2: Restaurant basics
+This removes every "Sample/Demo" label, the banner, the stock-photo captions and the Bright Site Tech panel. It also **hides any button whose link is empty** and any section left empty. Navigation links to hidden sections disappear automatically.
+
+## Step 2: Business basics
 
 ```js
-restaurant: {
+business: {
+  schemaType: "Restaurant",        // or "AutoRepair", "HairSalon", "Plumber", "LocalBusiness"…
   name: "Tony's Pizzeria",
-  shortName: "Tony's",                       // used in the header on small phones
+  shortName: "Tony's",             // used in the header on small phones
   tagline: "Wood-fired pizza, made by hand.",
   description: "Two or three sentences in the owner's words.",
   eyebrow: "Family pizzeria · Columbus, OH",
-  cuisine: "Pizza, Italian-American",
+  cuisine: "Pizza, Italian-American",   // restaurants only
   priceRange: "$$",
 },
 ```
 
-## Step 3: Brand colors
+## Step 3: Brand colors, fonts and layout
 
-Change the hex codes in `theme`. Tips:
+- `theme`: the hex colors. Take them from the client's logo or sign, or use a set from the [playbook](05-industry-design-playbook.md). Keep text colors dark on light backgrounds and check pairs at [webaim.org/resources/contrastchecker](https://webaim.org/resources/contrastchecker/) (aim for 4.5:1).
+  - `cta` / `onCta`: main button color and its text color.
+  - `radius`: `"4px"` for a crisp look, `"6px"` softer.
+  - `headingCase: "uppercase"` for bold industrial headings; `italicAccents: false` for no italics.
+- **Fonts:** set `fontDisplay` and `fontBody` **and** edit the Google Fonts `<link>` in `index.html` so the same fonts are loaded.
+- `layout.hero`: `"arch"` (photo beside the text) or `"fullbleed"` (photo behind the text).
 
-- Take colors from the restaurant's logo, sign or menu.
-- Keep `text`, `mutedText`, `primary` and `accent` **dark** enough to read on the light `background`. Check pairs at [webaim.org/resources/contrastchecker](https://webaim.org/resources/contrastchecker/) (aim for 4.5:1 or higher).
-- `onDark` is the text color on `primary` (buttons, footer). It should be very light.
+## Step 4: Hero buttons and phone bar
 
-To change fonts, edit the Google Fonts `<link>` in `index.html` and the two `--font-…` lines at the top of `css/styles.css`.
+```js
+hero: {
+  primary: { label: "Explore Our Menu", href: "#menu", icon: "book" },
+  secondary: "directions",           // or "call"
+},
+mobileBar: {
+  first: { label: "Menu", href: "#menu", icon: "book" },
+},
+```
 
-## Step 4: Contact and location
+Icons available: `book, phone, pin, clock, calendar, bag, truck, wrench, clipboard, message, scissors, car, shield, check, arrow, external`.
+
+## Step 5: Contact and location
 
 ```js
 contact: {
-  phoneDisplay: "(614) 555-0123",     // how it looks on the page (example number)
+  eyebrow: "Find us",
+  heading: "Visit & contact",
+  callLabel: "Call the restaurant",
+  phoneDisplay: "(614) 555-0123",
   phoneLink: "+16145550123",          // digits with +1 for click-to-call
   email: "",                          // only if the owner wants it public
   address: { street: "123 Main St", city: "Columbus", state: "OH", zip: "43215" },
@@ -62,104 +92,121 @@ contact: {
 },
 ```
 
-`mapQuery` is what **Get Directions** searches for in Google Maps. Use the business name + full address exactly as it appears on their Google Business Profile, then tap the button on your phone to confirm it finds the right place.
+`mapQuery` is what **Get Directions** searches for in Google Maps. Use the business name + full address exactly as on their Google Business Profile, then test the button on your phone.
 
-## Step 5: Opening hours
+## Step 6: Opening hours
 
-- Set `timezone` to the restaurant's zone (the list is in the config comments). "Open now" depends on it.
-- 24-hour times: `[["11:00", "22:00"]]`. Closed day: `[]`.
-- Lunch and dinner shifts: `[["11:30", "14:30"], ["17:00", "21:30"]]`.
-- Closes after midnight: `[["17:00", "02:00"]]`.
-- Use `note` for holiday or seasonal messages.
+- `timezone`: the business's zone (list in the config comments). "Open now" depends on it.
+- 24-hour times: `[["11:00", "22:00"]]`. Closed: `[]`. Split shifts: `[["11:30", "14:30"], ["17:00", "21:30"]]`. Past midnight: `[["17:00", "02:00"]]`.
+- `note` for holiday or seasonal messages.
 
-## Step 6: Ordering, reservations, delivery
+## Step 7: Action buttons (ordering, booking, quotes, delivery)
 
-Paste only links the owner gave you, such as their Toast/Square/ChowNow ordering page, OpenTable/Resy/Tock page, or their own DoorDash/Uber Eats/Grubhub store page:
+The `actions` section is a list of button groups. Paste **only links the owner gave you**:
 
 ```js
-ordering: {
-  orderOnline:  { label: "Order for pickup", url: "https://…" },
-  reservations: { label: "Reserve a table",  url: "" },        // empty → hidden
-  delivery: [
-    { name: "DoorDash", url: "https://…" },
-    { name: "Uber Eats", url: "" },                             // empty → hidden
+actions: {
+  id: "order",
+  eyebrow: "Eat in or take out",
+  heading: "Order & reserve",
+  intro: "Book a table or order ahead.",
+  groups: [
+    {
+      title: "Direct from the restaurant",
+      items: [
+        { label: "Reserve a table", url: "https://…", icon: "calendar", primary: true },
+        { label: "Order for pickup", url: "", icon: "bag", primary: true },   // empty → hidden
+      ],
+    },
+    {
+      title: "Delivery partners",
+      wrap: true,
+      items: [{ label: "DoorDash", url: "https://…", icon: "truck" }],
+    },
   ],
 },
 ```
 
-If the restaurant has **no** ordering or reservation links, the whole "Order & reserve" section disappears, and the "Order" links in the header and footer are hidden automatically.
+- `sms:+1…` links open a text message; `tel:+1…` links call.
+- For a quote form, link a Google Form or Formspree form ([guide 2](02-set-up-the-inquiry-form.md#quote-forms-on-client-websites-business-package)).
+- With no links at all, the whole section disappears.
 
-## Step 7: Social links
+## Step 8: Menu or services with prices
 
-Fill in the real profile URLs. Empty ones are hidden.
-
-## Step 8: Photos
-
-1. Get photos **from the owner** (or ones they've licensed). Don't copy photos from Google, Yelp or delivery apps.
-2. Resize and compress them for free in your phone browser at **[squoosh.app](https://squoosh.app)**:
-   - Hero: two copies, **1600 px** and **900 px** wide → `hero-1600.webp`, `hero-900.webp`
-   - About photo: **1200 px** wide → `about-dining.webp`
-   - Gallery: square crops, **800 × 800** → `dish-burger.webp` etc. (any names you like)
-   - Format **WebP**, quality around **70–75**, so each file is ideally under ~150 KB.
-3. On GitHub: open `site/images` → **Add file → Upload files** → upload → **Commit**.
-4. Easiest path: **upload with the same file names** as the demo images (replacing them), then just update the `alt` text in `config.js` to describe the new photos. If you use new names, update `src` too. Names are case-sensitive.
-5. `position` controls the crop focus: `"50% 50%"` is the center, `"50% 80%"` keeps the lower part.
-6. Replace `og-image.jpg` (1200 × 630) with a restaurant photo. It's the picture shown when the link is shared.
-7. Delete leftover demo photos you no longer use.
-
-## Step 9: About section
-
-Write the story **with the owner** using facts they confirm: who runs it, what they cook, what the place feels like. No invented awards, founding dates, "best in town" claims or reviews. Keep 2–3 short paragraphs and 3 highlights.
-
-## Step 10: Menu
-
-Each dish is one line:
+The `menu` section works for a food menu **or** a service list:
 
 ```js
-{ name: "Margherita", description: "San Marzano tomato, fresh mozzarella, basil.", price: 16, tags: ["V"] },
+menu: {
+  id: "menu",                         // "services" for service businesses
+  eyebrow: "Lunch & dinner",
+  heading: "Our Menu",                // "Services & prices"
+  allLabel: "All",
+  tags: { V: "Vegetarian", GF: "Gluten-free" },
+  categories: [
+    { id: "pizza", name: "Pizza", items: [
+      { name: "Margherita", description: "Tomato, mozzarella, basil.", price: 16, tags: ["V"] },
+    ]},
+  ],
+},
 ```
 
-- `price`: a number (`16` → $16, `3.5` → $3.50) or text (`"Market price"`).
-- `tags`: only dietary labels the **owner confirms in writing**. They carry real-world responsibility.
-- Add or remove categories in `categories`. Each needs a unique `id` (lowercase, no spaces) and a `name`.
-- Copy the menu from the owner's **current** menu and have them approve every price.
+- `price`: a number (`16` → $16, `3.5` → $3.50) or text (`"From $69"`, `"Quoted per vehicle"`).
+- `tags`: short labels explained in `menu.tags`. Dietary labels only if the owner confirms them in writing.
+- Copy from the owner's **current** menu or price list and have them approve every price.
 
-## Step 11: Page title, description and link previews
+## Step 9: Photos
 
-In `config.js` → `meta`: write a title like `"Tony's Pizzeria — Wood-Fired Pizza in Columbus, OH"`, a one-sentence description, and set `siteUrl` once you know the domain.
+1. Use photos **the owner provides** or is licensed to use. Never copy from Google, Yelp or delivery apps.
+2. Resize and compress for free in your phone browser at **[squoosh.app](https://squoosh.app)**:
+   - Hero: **1600 px** and **900 px** wide copies → `hero-1600.webp`, `hero-900.webp`
+   - About photo: **1200 px** wide
+   - Gallery: square, **800 × 800**
+   - WebP, quality about **70**, ideally under 150 KB each
+3. On GitHub: open the demo's `images` folder → **Add file → Upload files**. Easiest: upload with the **same file names** as the demo, then update the `alt` text in `config.js` to describe the new photos. Names are case-sensitive.
+4. `position` sets the crop focus (`"50% 50%"` = center).
+5. Replace `images/og-image.jpg` (1200 × 630). It's the picture shown when the link is shared.
+6. Delete demo photos you no longer use.
 
-In `site/index.html` (inside `<head>`):
+## Step 10: About section
 
-- [ ] Update `<title>`, `description`, `og:title`, `og:description` to match `config.js`.
-- [ ] Change `og:image` to the full URL once the domain is live.
-- [ ] **Delete** the `<meta name="robots" content="noindex, nofollow">` line. Otherwise Google is told not to list the site.
-- [ ] Optional: change the two colors in `favicon.svg` to the restaurant's brand colors.
+Write 2–3 short paragraphs **with the owner**, using facts they confirm. Add 3 highlights. No invented awards, founding years, certifications, "best in town" claims or reviews.
+
+## Step 11: Page head (in `index.html`)
+
+- [ ] Update `<title>`, `description`, `og:title`, `og:description` to match `config.js` → `meta`.
+- [ ] **Delete** `<meta name="robots" content="noindex, nofollow">`, or Google will be told not to list the site.
+- [ ] After the domain is connected, set `meta.siteUrl` in `config.js` and change `og:image` to the full URL.
+- [ ] Update the two colors in `favicon.svg`, or replace it with the client's own icon.
 
 ## Step 12: Review, approve, launch
 
-1. Run the phone test checklist in [guide 1](01-preview-and-deploy-from-your-phone.md#d-test-the-site-on-your-phone-do-this-before-every-demo-and-every-launch).
-2. Send the owner the private `onrender.com` preview link. Ask them to check **every** price, hour, phone number and link.
-3. Get **written approval** (an email reply such as "Approved, please launch" is fine) and the agreed payment.
-4. Connect their domain: [guide 2](02-connect-a-client-domain.md).
+1. Run the phone checklist in [guide 1](01-preview-and-deploy-from-your-phone.md#d-test-the-site-on-your-phone-do-this-before-every-demo-and-every-launch).
+2. Send the owner the private preview link. Ask them to check **every** price, hour, phone number and link.
+3. Get **written approval** (an email "Approved, please launch" is fine) and the agreed final payment.
+4. Connect their domain: [guide 4](04-connect-a-client-domain.md).
 
 ---
 
-## Quick reference: common edits
+## Quick reference
 
-| I want to… | Do this in `config.js` |
+| I want to… | In `config.js` |
 | --- | --- |
-| Change a price | Edit the `price:` number of that dish. |
-| Remove a dish | Delete its whole `{ … },` line. |
-| Close on Tuesdays | `tuesday: [],` |
-| Add a holiday notice | Edit `hours.note`. |
-| Hide the photo gallery | `gallery: [],` |
-| Hide the About section | Delete `<div data-component="about"></div>` in `index.html`. |
+| Change a price | Edit the item's `price`. |
+| Remove an item | Delete its `{ … },` line. |
+| Close on Mondays | `monday: [],` |
+| Holiday notice | `hours.note` |
+| Hide the gallery | `gallery: [],` |
+| Hide a whole section | Delete its `<div data-component="…">` line in `index.html`. |
 | Reorder sections | Move the `<div data-component="…">` lines in `index.html`. |
-| Rename a nav link | Edit `label` in `navigation`. |
+| Rename a nav link | `navigation` → `label` |
 
 ## Never do this on a client site
 
-- Publish a site using a restaurant's name, logo, menu or photos **before** they agree in writing.
-- Add reviews, star ratings or testimonials you can't source, or awards they didn't win.
-- Add payment forms or collect card details. Link to the restaurant's existing ordering provider instead.
-- Put API keys, passwords or private notes in any file in `site/`. Everything in that folder is public.
+- Publish a site with a business's name, logo, menu or photos **before** they agree in writing.
+- Add reviews, ratings, testimonials, certifications or awards you can't source.
+- Add payment forms or collect card details. Link to their existing ordering or booking provider instead.
+- Put passwords, API keys or private notes in the website folder. Everything in it is public.
+
+## For whoever maintains the template (computer)
+
+The template code lives in `engine/` at the repository root. After changing it, run `node tools/sync-engine.mjs` to copy it into every demo, then `npm test` in `tools/`. Never edit `site/demos/*/engine/` directly.

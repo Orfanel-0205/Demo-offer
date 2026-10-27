@@ -11,7 +11,7 @@ Everything here works from an Android phone with Chrome. You don't need a comput
 
 ---
 
-## A. Publish the demo on Render (first time, about 5 minutes)
+## A. Publish your website on Render (first time, about 5 minutes)
 
 1. In Chrome, go to **[render.com](https://render.com)** → **Get Started** → **Sign up with GitHub**. Approve the request.
 2. In the Render dashboard, tap **New +** → **Static Site**.
@@ -20,14 +20,19 @@ Everything here works from an Android phone with Chrome. You don't need a comput
 
    | Field | Value |
    | --- | --- |
-   | **Name** | `harbor-hearth-demo` (this becomes part of your link if available) |
+   | **Name** | `bright-site-tech` (this becomes part of your link if available) |
    | **Branch** | `main` |
    | **Root Directory** | *leave empty* |
    | **Build Command** | leave empty. If Render insists on a value, type `echo "no build needed"` |
    | **Publish Directory** | `site` |
 
 5. Tap **Create Static Site**. Wait for the log to show **Your site is live 🎉** (usually under 2 minutes).
-6. Tap the link at the top (something like `https://harbor-hearth-demo.onrender.com`). That's your demo. Bookmark it, and add it to your home screen (Chrome menu ⋮ → **Add to Home screen**) so it opens like an app during calls.
+6. Tap the link at the top (something like `https://bright-site-tech.onrender.com`). That's your Bright Site Tech website. The sample designs live at:
+   - `…onrender.com/demos/restaurant/` (Harbor & Hearth Kitchen)
+   - `…onrender.com/demos/auto-repair/` (Copperline Auto Care)
+
+   Bookmark them and add them to your home screen (Chrome menu ⋮ → **Add to Home screen**) so they open like apps during calls.
+7. Next, set up how inquiries reach you: [guide 2](02-set-up-the-inquiry-form.md).
 
 **Alternative (Blueprint):** Render can read [`render.yaml`](../render.yaml) instead: **New +** → **Blueprint** → choose this repository → **Apply**. It creates the same static site with the settings already filled in.
 
@@ -39,17 +44,19 @@ Everything here works from an Android phone with Chrome. You don't need a comput
 
 1. Open **github.com/Orfanel-0205/Demo-offer** in Chrome and sign in.
 2. Tip: for the full editor, open the Chrome menu ⋮ and tick **Desktop site**. Zoom in as needed.
-3. Tap `site` → `config.js` → the ✏️ **pencil icon** (Edit this file).
+3. Open the file you want to change and tap the ✏️ **pencil icon** (Edit this file):
+   - **Your prices, contact details, portfolio:** `site/agency.config.js`
+   - **A sample business's content:** `site/demos/restaurant/config.js` or `site/demos/auto-repair/config.js`
 4. Change the text between quotes, for example:
 
    ```js
-   tagline: "Comfort food, cooked with care.",
+   price: "$149",
    ```
 
 5. Tap **Commit changes…**. Write a short message (e.g. "Update tagline") → **Commit changes**.
-6. Render notices the commit and republishes automatically. Wait 1–2 minutes, then reload your demo link. If you still see the old version, close and reopen the tab.
+6. Render notices the commit and republishes automatically. Wait 1–2 minutes, then reload the page. If you still see the old version, close and reopen the tab.
 
-**Golden rules for `config.js`:**
+**Golden rules for the config files:**
 
 - Keep the quotes `"…"` around text, and the comma at the end of each line.
 - To write a quote mark inside text, use a curly one (“ ”) or an apostrophe (').
@@ -83,19 +90,27 @@ Create a `staging` branch on GitHub, then a second Render static site that publi
 
 ## D. Test the site on your phone (do this before every demo and every launch)
 
+**Your Bright Site Tech page:**
+
+- [ ] Logo, sample designs, packages and prices look right; "Open the live demo" opens each sample.
+- [ ] ☰ menu opens, closes and jumps to each section; the yellow **Get a quote** button appears after you scroll.
+- [ ] Send yourself a test inquiry and check it arrives ([guide 2](02-set-up-the-inquiry-form.md)).
+
+**Each sample (and every client site):**
+
 Open the live link in Chrome on your phone and go through this list:
 
 - [ ] Page loads quickly and the photos appear.
 - [ ] No sideways scrolling: drag left/right on every section, and nothing should move.
 - [ ] Text is readable without zooming.
-- [ ] **Explore Our Menu** jumps to the menu.
+- [ ] The main hero button (**Explore Our Menu** / **See services & prices**) jumps to the right section.
 - [ ] Menu category buttons (All / Starters / …) each show the right dishes.
 - [ ] ☰ button opens and closes the navigation, and each link jumps to its section.
 - [ ] **Get Directions** opens Google Maps at the right place.
 - [ ] **Call** opens the phone dialer with the right number. (On the demo it's a fictional 555 number, so don't press dial.)
-- [ ] Opening-hours badge says "Open now" or "Closed now" correctly for the restaurant's local time.
-- [ ] Ordering / reservation / delivery buttons open the right pages (client sites) or show the demo explanation (demo).
-- [ ] Bottom bar (Menu · Call · Directions) works and doesn't cover the last lines of the page.
+- [ ] Opening-hours badge says "Open now" or "Closed now" correctly for the business's local time.
+- [ ] Ordering / booking / quote / delivery buttons open the right pages (client sites) or show the demo explanation (samples).
+- [ ] Bottom bar (Menu or Services · Call · Directions) works and doesn't cover the last lines of the page.
 - [ ] Rotate the phone to landscape and check again.
 - [ ] If you can, borrow an **iPhone** and check in Safari. It's the most common browser among US customers.
 
@@ -107,11 +122,11 @@ Open the live link in Chrome on your phone and go through this list:
 
 | Problem | Fix |
 | --- | --- |
-| Page is blank or shows "could not load its settings" | Syntax error in `config.js` (missing quote or comma). Check the file's History on GitHub. |
+| Page is blank or shows "could not load its settings" | Syntax error in the config file you edited (missing quote or comma). Check the file's History on GitHub. |
 | A photo doesn't show | File names are **case-sensitive** online: `Hero.webp` ≠ `hero.webp`. Check the spelling in `config.js` matches the uploaded file exactly. |
 | My change isn't visible | Wait 2 minutes, check Render's **Events** tab says "Deploy live", then close and reopen the tab. |
 | Render deploy failed | Open the deploy log in Render. The most common cause is a wrong **Publish Directory** (must be `site`). |
-| Link previews (WhatsApp/Facebook) show old text | Update the tags in the `<head>` of `site/index.html`. Social apps cache previews for a while. |
+| Link previews (WhatsApp/Facebook) show old text | Update the tags in the `<head>` of the page's `index.html`. Social apps cache previews for a while. |
 
 ---
 
@@ -123,4 +138,4 @@ cd Demo-offer
 node tools/serve.mjs        # open http://localhost:8080
 ```
 
-Or double-click `site/index.html`. The site also works when opened directly as a file.
+The sample designs also work when opened directly as files (double-click `site/demos/restaurant/index.html`).

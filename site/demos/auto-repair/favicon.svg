@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Wrench mark. Change the two colors to match a client's brand. -->
+  <rect width="64" height="64" rx="10" fill="#1F2937"/>
+  <path d="M41.5 14.5a11 11 0 0 0-13.9 13.6L15 40.7a4.5 4.5 0 0 0 6.4 6.4l12.6-12.6a11 11 0 0 0 13.6-13.9l-6.3 6.3-5.5-1.6-1.6-5.5z" fill="#F97316"/>
+</svg>

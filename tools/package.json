@@ -1,11 +1,14 @@
 {
-  "name": "restaurantlaunch-tools",
+  "name": "bright-site-tech-tools",
   "private": true,
-  "description": "Optional desktop tools: local preview server, automated site checks and demo video recorder. The website itself needs none of this.",
+  "description": "Optional desktop tools for Bright Site Tech: preview server, automated checks, engine sync, screenshots, brand exports and demo videos. The websites themselves need none of this.",
   "type": "module",
   "scripts": {
     "serve": "node serve.mjs",
     "test": "node test-site.mjs",
+    "sync": "node sync-engine.mjs",
+    "capture": "node capture-portfolio.mjs",
+    "brand": "node render-brand.mjs",
     "videos": "node record-videos.mjs"
   },
   "devDependencies": {

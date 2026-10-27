@@ -1,8 +1,9 @@
 // Records the demo walkthrough videos frame by frame (desktop computer only).
-// Usage:  cd tools && npm install && node record-videos.mjs [vertical|landscape]
+// Usage:  cd tools && npm install && node record-videos.mjs [vertical|landscape|auto]
 // Needs Google Chrome and ffmpeg (https://ffmpeg.org) on the PATH.
-// Output: videos/harbor-hearth-phone-demo.mp4 (1080×1920)
-//         videos/harbor-hearth-desktop-demo.mp4 (1920×1080)
+// Output: videos/harbor-hearth-phone-demo.mp4   (restaurant, 1080×1920)
+//         videos/harbor-hearth-desktop-demo.mp4 (restaurant, 1920×1080)
+//         videos/copperline-auto-phone-demo.mp4 (auto repair, 1080×1920)
 //
 // Each frame is a screenshot of tools/video/stage.html, which shows the real
 // website inside phone/browser frames. Scrolling, captions and taps are driven
@@ -18,7 +19,7 @@ const PORT = 8152;
 const ORIGIN = `http://localhost:${PORT}`;
 const VIDEOS = fileURLToPath(new URL("../videos/", import.meta.url));
 const STAGE_HTML = await readFile(new URL("./video/stage.html", import.meta.url), "utf8");
-// Friday 6:30 PM Eastern, so the sample hours read "Open now · Closes 10 PM".
+// Friday 6:30 PM Eastern (4:30 PM in Boise), so both samples read "Open now".
 const FIXED_TIME = new Date("2026-10-30T18:30:00-04:00");
 
 const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -151,14 +152,14 @@ class Recorder {
   }
 }
 
-async function openStage(browser, layout) {
+async function openStage(browser, layout, demo = "restaurant") {
   const size = layout === "v" ? { width: 540, height: 960 } : { width: 1280, height: 720 };
   const scale = layout === "v" ? 2 : 1.5;
   const context = await browser.newContext({ viewport: size, deviceScaleFactor: scale, reducedMotion: "reduce" });
   await context.clock.setFixedTime(FIXED_TIME);
   const page = await context.newPage();
   await page.route(`${ORIGIN}/__stage.html*`, (route) => route.fulfill({ contentType: "text/html", body: STAGE_HTML }));
-  await page.goto(`${ORIGIN}/__stage.html?layout=${layout}`, { waitUntil: "networkidle" });
+  await page.goto(`${ORIGIN}/__stage.html?layout=${layout}&demo=${demo}`, { waitUntil: "networkidle" });
   await page.evaluate(() => window.stage.ready());
   page.__devices = await page.evaluate(() => window.stage.devices);
   // Visit every part of each page once so lazy images are loaded before recording.
@@ -324,6 +325,83 @@ async function recordLandscape(browser) {
   await context.close();
 }
 
+// ---------------------------------------------------------------------------
+// Vertical phone walkthrough of the auto repair sample
+// ---------------------------------------------------------------------------
+async function recordAutoVertical(browser) {
+  console.log("Recording auto repair phone demo…");
+  const { page, context } = await openStage(browser, "v", "auto-repair");
+  const r = new Recorder(page, VIDEOS + "copperline-auto-phone-demo.mp4", 4.2);
+  const P = "phone";
+
+  r.state.cards.intro = 1;
+  r.caption("Prices and a call button, right on the first screen.");
+  r.state.captionStart = 0;
+  await r.card("intro", 0, 2.4, 0.7);
+  await r.hold(1.6);
+
+  r.caption("Live hours in the shop's own time zone.");
+  await r.scroll({ [P]: 330 }, 1.4);
+  await r.hold(1.6);
+
+  r.caption("Upfront starting prices for common jobs.");
+  await r.tap(P, ".hero .btn--primary");
+  await r.scroll({ [P]: "#services" }, 1.2);
+  await r.hold(0.8);
+  await r.scroll({ [P]: "#menu-cat-maintenance" }, 1.2, { [P]: -24 });
+  await r.hold(0.6);
+  await r.scroll({ [P]: "#menu-cat-brakes" }, 2.2, { [P]: -24 });
+  await r.hold(0.8);
+
+  r.caption("Filter by the kind of job.");
+  await r.scroll({ [P]: ".menu-filters" }, 1.0, { [P]: -120 });
+  await r.swipe(P, ".menu-filters", 0.7, "end");
+  await r.tap(P, '.filter-btn[data-filter="diagnostics"]', { click: true });
+  await r.hold(1.6);
+  await r.swipe(P, ".menu-filters", 0.7, 0);
+  await r.tap(P, '.filter-btn[data-filter="all"]', { click: true });
+
+  r.caption("How the shop works, in the owner's words.");
+  await r.scroll({ [P]: "#about" }, 1.6);
+  await r.hold(1.2);
+  await r.scroll({ [P]: ".highlights" }, 1.4, { [P]: -40 });
+  await r.hold(0.8);
+
+  r.caption("Photos of the shop and the work.");
+  await r.scroll({ [P]: ".gallery-wrap" }, 1.4, { [P]: -30 });
+  await r.swipe(P, ".gallery", 2.4);
+  await r.hold(0.6);
+
+  r.caption("Book online, ask for a quote, or send a text.");
+  await r.scroll({ [P]: "#book" }, 1.6, { [P]: 120 });
+  await r.hold(0.6);
+  await r.tap(P, '.btn--demo[data-demo-link*="quote"]', { click: true });
+  await r.scroll({ [P]: ".order-card" }, 0.8, { [P]: 40 });
+  await r.hold(2.0);
+
+  r.caption("Address, hours, one-tap calling and directions.");
+  await r.scroll({ [P]: "#visit" }, 1.6);
+  await r.hold(0.6);
+  await r.scroll({ [P]: ".visit__actions" }, 1.2, { [P]: -220 });
+  await r.tap(P, ".visit__actions .btn--primary");
+  await r.scroll({ [P]: ".visit__hours" }, 1.4, { [P]: -20 });
+  await r.hold(1.4);
+
+  r.caption("Services, Call and Directions always within reach.");
+  await r.tap(P, ".mobile-actions__link:nth-child(2)", { seconds: 1.0 });
+  await r.hold(0.6);
+
+  r.caption("Want a site like this? Simple, upfront pricing.");
+  await r.scroll({ [P]: "#packages" }, 1.8, { [P]: 40 });
+  await r.hold(1.4);
+  await r.scroll({ [P]: ".package--featured" }, 1.6, { [P]: -30 });
+  await r.hold(1.2);
+
+  await r.card("end", 0.8, 5.5, 0);
+  await r.finish();
+  await context.close();
+}
+
 await mkdir(VIDEOS, { recursive: true });
 const which = process.argv[2];
 const server = await startServer(PORT);
@@ -331,6 +409,7 @@ const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || "chro
 try {
   if (!which || which === "vertical") await recordVertical(browser);
   if (!which || which === "landscape") await recordLandscape(browser);
+  if (!which || which === "auto") await recordAutoVertical(browser);
 } finally {
   await browser.close();
   server.close();

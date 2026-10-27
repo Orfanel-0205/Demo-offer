@@ -5,10 +5,11 @@
 services:
   - type: web
     runtime: static
-    name: harbor-hearth-demo
+    name: bright-site-tech
     # No build step: the site is plain HTML, CSS and JavaScript.
     buildCommand: echo "No build step needed"
-    # Only the site/ folder is published (docs, tools and videos stay private to the repo).
+    # Only the site/ folder is published: the Bright Site Tech page plus the samples in site/demos/.
+    # (docs/, tools/, brand/ and videos/ are not served.)
     staticPublishPath: ./site
     headers:
       - path: /*

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <!-- =====================================================================
+         SEO / SHARING
+         config.js updates the title and description when the page loads.
+         Link previews (Facebook, iMessage, WhatsApp…) do NOT run JavaScript,
+         so for a client site also edit the text in the tags below to match.
+         ================================================================== -->
+    <title>Harbor &amp; Hearth Kitchen — Sample Restaurant Website</title>
+    <meta
+      name="description"
+      content="A fictional neighborhood restaurant used to demonstrate a mobile-friendly restaurant website: menu, hours, location, ordering and reservations."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Harbor &amp; Hearth Kitchen — Sample Restaurant Website" />
+    <meta
+      property="og:description"
+      content="A fictional neighborhood restaurant used to demonstrate a mobile-friendly restaurant website."
+    />
+    <!-- For a live site, use the full address, e.g. https://www.restaurant.com/images/og-image.jpg -->
+    <meta property="og:image" content="images/og-image.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- DEMO ONLY: keeps the fictional sample out of search results.
+         DELETE this line when you launch a real client's website. -->
+    <meta name="robots" content="noindex, nofollow" />
+
+    <meta name="theme-color" content="#F7F1E8" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+    <!-- Fonts: Fraunces (headings) + Figtree (text), free from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..800&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&display=swap"
+    />
+    <link rel="stylesheet" href="engine/css/styles.css" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <!-- Each placeholder below is filled in by a component in engine/js/components/.
+         Reorder or delete placeholders to change which sections appear. -->
+    <div data-component="demoBar"></div>
+    <div data-component="navigation"></div>
+
+    <main id="main" tabindex="-1">
+      <div data-component="hero"></div>
+      <div data-component="menu"></div>
+      <div data-component="about"></div>
+      <div data-component="actions"></div>
+      <div data-component="contact"></div>
+    </main>
+
+    <div data-component="footer"></div>
+    <div data-component="agencyPanel"></div>
+    <div data-component="mobileActions"></div>
+
+    <noscript>
+      <p class="config-error">
+        This website needs JavaScript turned on to show the menu, opening hours and contact details.
+      </p>
+    </noscript>
+
+    <!-- 1. Content: edit config.js -->
+    <script src="config.js"></script>
+    <!-- 2. Template engine (shared by every site; no need to edit) -->
+    <script src="engine/js/core.js"></script>
+    <script src="engine/js/components/opening-hours.js"></script>
+    <script src="engine/js/components/demo-bar.js"></script>
+    <script src="engine/js/components/navigation.js"></script>
+    <script src="engine/js/components/hero.js"></script>
+    <script src="engine/js/components/menu.js"></script>
+    <script src="engine/js/components/about.js"></script>
+    <script src="engine/js/components/actions.js"></script>
+    <script src="engine/js/components/contact.js"></script>
+    <script src="engine/js/components/footer.js"></script>
+    <script src="engine/js/components/agency-panel.js"></script>
+    <script src="engine/js/components/mobile-actions.js"></script>
+    <script src="engine/js/main.js"></script>
+  </body>
+</html>
