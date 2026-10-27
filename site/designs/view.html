@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- One page shows every sample design: view.html?d=<design-id>.
+         The design list is in catalog.js and each industry's content in content/. -->
+    <title>Sample design — Bright Site Tech</title>
+    <meta name="description" content="A sample website design for a fictional local business, by Bright Site Tech." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Sample website design — Bright Site Tech" />
+    <meta property="og:description" content="Sample website designs for local businesses. Every business shown is fictional." />
+    <meta property="og:image" content="https://my-services-x4kc.onrender.com/assets/img/og-image.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Samples stay out of search results; the gallery itself is indexed. -->
+    <meta name="robots" content="noindex, follow" />
+    <meta name="theme-color" content="#0B1B33" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="engine/css/styles.css" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <div data-component="demoBar"></div>
+    <div data-component="navigation"></div>
+
+    <main id="main" tabindex="-1">
+      <div data-component="hero"></div>
+      <div data-component="menu"></div>
+      <div data-component="about"></div>
+      <div data-component="actions"></div>
+      <div data-component="contact"></div>
+    </main>
+
+    <div data-component="footer"></div>
+    <div data-component="agencyPanel"></div>
+    <div data-component="mobileActions"></div>
+
+    <noscript>
+      <p class="config-error">This sample design needs JavaScript turned on.</p>
+    </noscript>
+
+    <script src="catalog.js"></script>
+    <script src="compose.js"></script>
+    <!-- Loads the design's content, then the template engine (engine/, a synced copy). -->
+    <script src="view.js"></script>
+  </body>
+</html>

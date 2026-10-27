@@ -59,9 +59,13 @@ window.AGENCY_CONFIG = {
      those updates its answers. Anything else goes to you: WhatsApp, email or
      the quote form. It runs in the visitor's browser: no AI service, no cost,
      and nothing they type is sent or saved. enabled: false hides it.
+     teaser: the "What business are you in?" bubble that appears next to the
+     button after a few seconds and leads to matching sample designs
+     (from designs/catalog.js). false turns the bubble off.
      ------------------------------------------------------------------------ */
   assistant: {
     enabled: true,
+    teaser: true,
     name: "Bright Site Tech assistant",
     greeting:
       "Hi! I can answer common questions about our websites, prices and how it works. " +

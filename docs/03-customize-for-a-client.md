@@ -6,7 +6,17 @@ Have the completed [onboarding checklist](09-client-onboarding-checklist.md) in 
 
 ---
 
-## Step 0: Pick the closest demo and copy the project
+## Step 0: Pick the closest design and copy the project
+
+**If the client picked a design from the gallery** (or you picked one with them), make it a website folder first. On your computer, in `tools/`:
+
+```bash
+node export-design.mjs <design-id> <client-folder>      # e.g. golden-crumb-bakery marias-bakery
+```
+
+This creates `site/demos/<client-folder>/`, built exactly like the two samples below. Use that folder wherever this guide says `site/demos/restaurant` ([guide 12](12-design-gallery.md) has the details).
+
+**Otherwise**, start from one of the two full samples:
 
 | Client | Start from |
 | --- | --- |
@@ -60,7 +70,8 @@ business: {
   - `radius`: `"4px"` for a crisp look, `"6px"` softer.
   - `headingCase: "uppercase"` for bold industrial headings; `italicAccents: false` for no italics.
 - **Fonts:** set `fontDisplay` and `fontBody` **and** edit the Google Fonts `<link>` in `index.html` so the same fonts are loaded.
-- `layout.hero`: `"arch"` (photo beside the text) or `"fullbleed"` (photo behind the text).
+- `layout.hero`: `"arch"` (photo beside the text), `"fullbleed"` (photo behind the text), `"center"` (photo behind, centered text), `"split"` (rounded photo with a color block) or `"banner"` (big name, wide photo below). `layout.menu`: `"list"` or `"cards"`.
+- Dark designs (like the gallery's Midnight and Steel Dark styles) also set `onPhoto`, `footer`, `onFooter` and `colorScheme: "dark"`. Copy all of a style's `theme` from `site/designs/catalog.js` rather than mixing colors by hand.
 
 ## Step 4: Hero buttons and phone bar
 

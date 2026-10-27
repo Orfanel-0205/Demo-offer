@@ -3,7 +3,9 @@
 // Uses the Google Chrome already installed on the computer (no browser download).
 // Screenshots are written to tools/output/ (ignored by git).
 import { chromium } from "playwright-core";
-import { readFile, readdir, mkdir } from "node:fs/promises";
+import { readFile, readdir, mkdir, rm, stat } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import vm from "node:vm";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { join, relative } from "node:path";
@@ -22,7 +24,14 @@ const PAGES = {
   studio: "/",
   restaurant: "/demos/restaurant/",
   auto: "/demos/auto-repair/",
+  gallery: "/designs/",
+  design: "/designs/view.html?d=ember-and-oak-steakhouse", // a dark design with a full-bleed hero
 };
+
+// The design catalog, read the same way the browser does.
+const catalogBox = { window: {} };
+vm.runInNewContext(await readFile(join(ROOT, "site", "designs", "catalog.js"), "utf8"), catalogBox);
+const CATALOG = catalogBox.window.DESIGN_CATALOG;
 
 const results = [];
 const check = (name, ok, detail = "") => {
@@ -39,8 +48,10 @@ const whatsappLink = (value = "") =>
 // Config patches that replace a contact detail, whatever it's currently set to.
 const setContact = (field, value) => (src) => src.replace(new RegExp(`${field}: "[^"]*"`), `${field}: "${value}"`);
 
-async function openPage(path, viewport, { mobile = false, timezoneId, configPatch, agencyPatch, routes } = {}) {
+async function openPage(path, viewport, { mobile = false, timezoneId, configPatch, agencyPatch, routes, teaser = false } = {}) {
   const context = await browser.newContext({ viewport, deviceScaleFactor: mobile ? 2 : 1, isMobile: mobile, hasTouch: mobile, timezoneId });
+  // The "What business are you in?" bubble pops up after a few seconds; it has its own tests (3e).
+  if (!teaser) await context.addInitScript(() => sessionStorage.setItem("bst-teaser-closed", "1"));
   const page = await context.newPage();
   const problems = [];
   const requests = [];
@@ -117,10 +128,11 @@ const sectionTop = (page, id) => page.evaluate((i) => document.getElementById(i)
   }
   const master = join(ROOT, "engine");
   const files = await list(master);
-  for (const demo of ["restaurant", "auto-repair"]) {
+  for (const demo of ["restaurant", "auto-repair", "designs"]) {
     const stale = [];
+    const base = demo === "designs" ? join(ROOT, "site", "designs") : join(ROOT, "site", "demos", demo);
     for (const f of files) {
-      const copy = join(ROOT, "site", "demos", demo, "engine", relative(master, f));
+      const copy = join(base, "engine", relative(master, f));
       const same = await readFile(copy).then((b) => b.equals(Buffer.from(require("node:fs").readFileSync(f)))).catch(() => false);
       if (!same) stale.push(relative(master, f));
     }
@@ -152,7 +164,7 @@ for (const [key, path] of Object.entries(PAGES)) {
         const r = el.getBoundingClientRect();
         if (r.width && (r.right > docW + 1 || r.left < -1)) {
           // Intentional horizontal scrollers, off-screen helpers and decorative glows are fine.
-          if (!el.closest(".gallery, .menu-filters, .hp, .skip-link, .sticky-cta, .hero__visual")) offenders.push(`${el.tagName.toLowerCase()}.${el.className}`);
+          if (!el.closest(".gallery, .menu-filters, .g-filters, .g-hero__art, .hp, .skip-link, .sticky-cta, .hero__visual")) offenders.push(`${el.tagName.toLowerCase()}.${el.className}`);
         }
       });
       return { scrollW: document.documentElement.scrollWidth, docW, offenders: offenders.slice(0, 5) };
@@ -203,7 +215,7 @@ for (const [key, path] of Object.entries(PAGES)) {
     const tel = links.filter((l) => l.href.startsWith("tel:"));
     check(`[${key}] click-to-call links use the configured number`, tel.length >= 3 && tel.every((l) => l.href === EXPECTED_TEL[key]), `${tel.length} tel: links`);
   }
-  const internal = [...new Set(links.filter((l) => /^(\.\.\/|demos\/)/.test(l.href)).map((l) => new URL(l.href.split("#")[0], ORIGIN + path).href))];
+  const internal = [...new Set(links.filter((l) => /^(\.\.\/|\.\/|demos\/|designs\/)/.test(l.href)).map((l) => new URL(l.href.split("#")[0].split("?")[0], ORIGIN + path).href))]; // one check per page, not per ?design= link
   for (const url of internal) {
     const status = await page.evaluate((u) => fetch(u).then((r) => r.status), url);
     check(`[${key}] link to ${url.replace(ORIGIN, "")} works`, status === 200, `HTTP ${status}`);
@@ -515,7 +527,9 @@ for (const [key, path] of Object.entries(PAGES)) {
   for (const [question, expected] of [
     ["How long does it take?", "5 business days"],
     ["can customers book appointments online", "DoorDash"],
-    ["do you work with plumbers", "We design websites for"],
+    ["do you work with plumbers", "You might like these plumbing designs"],
+    ["what kinds of businesses do you work with", "We design websites for"],
+    ["Is my site going to work on phones?", "built for phones first"],
     [`what's included in the ${starter.name.split(" ")[0].toLowerCase()} package`, starter.includes[0]],
     ["Where are you located?", "Philippines"],
     ["Will I rank first on google", "No one can honestly promise that"],
@@ -587,10 +601,33 @@ for (const [key, path] of Object.entries(PAGES)) {
   const box = await page.locator("#assistant").boundingBox();
   check("[assistant] desktop chat opens as a side panel and the page stays usable",
     box.width <= 420 && box.x > 600 && !(await page.evaluate(() => document.querySelector("main").inert)), JSON.stringify(box));
-  await page.locator(".assistant__chip", { hasText: "Can I see examples?" }).click();
-  await page.locator(".msg--bot a", { hasText: "Copperline" }).waitFor({ timeout: 3000 }).catch(() => {});
-  check("[assistant] 'Can I see examples?' links to every sample design",
-    (await page.locator(".msg--bot:last-of-type .msg__bubble a").count()) === (await page.evaluate(() => window.AGENCY_CONFIG.portfolio.length)));
+  await page.locator(".assistant__chip", { hasText: "Show me designs for my business" }).click();
+  await page.locator(".msg--bot .msg__bubble", { hasText: "What business are you in?" }).waitFor({ timeout: 3000 }).catch(() => {});
+  check("[assistant] 'Show me designs' asks what business the visitor is in, with type-of-business buttons",
+    (await page.locator(".msg--bot .msg__bubble", { hasText: "What business are you in?" }).count()) === 1 &&
+      (await page.locator(".assistant__chip", { hasText: "Restaurant" }).count()) === 1);
+  await page.fill("#assistant-input", "we're a small bakery");
+  await page.press("#assistant-input", "Enter");
+  await page.locator(".msg--bot .assistant__design").first().waitFor({ timeout: 3000 }).catch(() => {});
+  const picks = await page.locator(".msg--bot").last().locator(".assistant__design").evaluateAll((a) => a.map((x) => x.getAttribute("href")));
+  const bakeryIds = CATALOG.forIndustry("bakery").map((d) => "designs/" + d.url);
+  check("[assistant] \"we're a small bakery\" → 3 bakery designs with previews", picks.length === 3 && picks.every((h) => bakeryIds.includes(h)), picks.join(", "));
+  const statuses = await page.evaluate((hrefs) => Promise.all(hrefs.map((h) => fetch(h).then((r) => r.status))),
+    [...picks, ...(await page.locator(".msg--bot").last().locator("img").evaluateAll((i) => i.map((x) => x.getAttribute("src"))))]);
+  check("[assistant] design links and preview images all load", statuses.every((st) => st === 200), statuses.join(","));
+  check("[assistant] 'See all' links to the bakery designs in the gallery",
+    (await page.locator(".msg--bot").last().locator("a", { hasText: "See all" }).getAttribute("href")) === "designs/?type=bakery");
+  await page.locator(".assistant__chip", { hasText: "What does a website cost?" }).click().catch(() => {});
+  await page.locator("[data-assistant-launcher]").click();
+  await page.locator("[data-assistant-launcher]").click();
+  await page.locator(".msg--bot").last().waitFor();
+  await page.fill("#assistant-input", "show me your designs");
+  await page.press("#assistant-input", "Enter");
+  await page.waitForTimeout(700);
+  await page.fill("#assistant-input", "bowling alley");
+  await page.press("#assistant-input", "Enter");
+  check("[assistant] a business with no sample gets an honest answer and the gallery link",
+    await page.locator(".msg--bot .msg__bubble", { hasText: "We don't have a sample for that business yet" }).last().waitFor({ timeout: 3000 }).then(() => true, () => false));
   const axe = await runAxe(page);
   check("[assistant] axe-core accessibility scan with the chat open: 0 violations (desktop)", axe.length === 0, axe.join(" | "));
   check("[assistant] no console errors (desktop)", problems.length === 0, problems.join(" | "));
@@ -601,6 +638,204 @@ for (const [key, path] of Object.entries(PAGES)) {
   const { page, context } = await openPage(PAGES.studio, { width: 390, height: 844 }, { mobile: true, agencyPatch: (src) => src.replace("enabled: true", "enabled: false") });
   check("[assistant] enabled: false hides it completely", (await page.locator("[data-assistant-launcher], #assistant").count()) === 0);
   await context.close();
+}
+
+// ---------------------------------------------------------------------------
+// 3e. "What business are you in?" bubble on the home page
+// ---------------------------------------------------------------------------
+{
+  const fast = (src) => src.replace("teaser: true,", "teaser: true, teaserDelay: 300,");
+  const { page, context, problems } = await openPage(PAGES.studio, { width: 390, height: 844 }, { mobile: true, teaser: true, agencyPatch: fast });
+  const teaser = page.locator("[data-assistant-teaser]");
+  const shown = await teaser.waitFor({ state: "visible", timeout: 3000 }).then(() => true, () => false);
+  check("[bubble] 'What business are you in?' appears beside the chat button", shown && /What business are you in\?/.test(await teaser.textContent()));
+  const chipBoxes = await teaser.locator("button").evaluateAll((b) => b.map((x) => x.getBoundingClientRect()).map((r) => Math.min(r.width, r.height)));
+  check("[bubble] every button is at least 44 px", chipBoxes.every((h) => h >= 44), chipBoxes.join(","));
+  const fits = await page.evaluate(() => {
+    const t = document.querySelector("[data-assistant-teaser]").getBoundingClientRect();
+    const l = document.querySelector("[data-assistant-launcher]").getBoundingClientRect();
+    return t.left >= 0 && t.right <= innerWidth && t.bottom <= l.top;
+  });
+  check("[bubble] fits on a phone screen, above the chat button", fits);
+  const axe = await runAxe(page);
+  check("[bubble] axe-core accessibility scan with the bubble showing: 0 violations", axe.length === 0, axe.join(" | "));
+  await page.screenshot({ path: fileURLToPath(new URL("bubble-phone.png", OUT)) });
+  await teaser.locator("button", { hasText: "Restaurant" }).tap();
+  await page.locator(".msg--bot .assistant__design").first().waitFor({ timeout: 3000 }).catch(() => {});
+  check("[bubble] tapping 'Restaurant' opens the chat with 'You might like these' restaurant designs",
+    (await page.locator("#assistant").isVisible()) && (await page.locator(".msg--bot .msg__bubble", { hasText: "You might like these restaurant designs" }).count()) === 1 &&
+      (await page.locator(".msg--bot .assistant__design").count()) === 3 && !(await teaser.isVisible()));
+  await page.screenshot({ path: fileURLToPath(new URL("bubble-chat-phone.png", OUT)) });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(900);
+  check("[bubble] doesn't come back after it was used (same visit)", !(await teaser.isVisible()));
+  check("[bubble] no console errors", problems.length === 0, problems.join(" | "));
+  await context.close();
+}
+{
+  const fast = (src) => src.replace("teaser: true,", "teaser: true, teaserDelay: 300,");
+  const { page, context } = await openPage(PAGES.studio, { width: 1280, height: 800 }, { teaser: true, agencyPatch: fast });
+  const teaser = page.locator("[data-assistant-teaser]");
+  await teaser.waitFor({ state: "visible", timeout: 3000 }).catch(() => {});
+  await teaser.locator("[data-teaser-close]").click();
+  check("[bubble] the × button dismisses it and focus goes to the chat button",
+    !(await teaser.isVisible()) && (await page.evaluate(() => document.activeElement.hasAttribute("data-assistant-launcher"))));
+  await context.close();
+  const off = await openPage(PAGES.studio, { width: 1280, height: 800 }, { teaser: true, agencyPatch: (src) => src.replace("teaser: true,", "teaser: false, teaserDelay: 300,") });
+  await off.page.waitForTimeout(900);
+  check("[bubble] teaser: false turns it off", (await off.page.locator("[data-assistant-teaser]").count()) === 0);
+  await off.context.close();
+}
+
+// ---------------------------------------------------------------------------
+// 3f. Design gallery and the 100+ sample designs
+// ---------------------------------------------------------------------------
+{
+  const designs = CATALOG.designs;
+  const ids = designs.map((d) => d.id);
+  check(`[designs] the catalog has over 100 designs`, designs.length > 100, `${designs.length} designs, ${CATALOG.industries.length} types of business`);
+  check("[designs] every design has a unique id", new Set(ids).size === ids.length);
+  const broken = designs.filter((d) => !d.featured && (!CATALOG.styles[d.style] || !d.place || !d.tagline)).map((d) => d.id);
+  check("[designs] every design has a style, a city and a tagline", broken.length === 0, broken.join(", "));
+  const missingContent = [];
+  for (const ind of CATALOG.industries) {
+    const ok = await stat(join(ROOT, "site", "designs", "content", ind.id + ".js")).then(() => true, () => false);
+    if (!ok) missingContent.push(ind.id);
+  }
+  check("[designs] every type of business has a content file", missingContent.length === 0, missingContent.join(", "));
+  const thumbs = [];
+  for (const d of designs.filter((x) => !x.featured)) {
+    if (!(await stat(join(ROOT, "site", "designs", d.thumb)).then(() => true, () => false))) thumbs.push(d.id);
+  }
+  check("[designs] every design has a gallery thumbnail (tools/capture-designs.mjs)", thumbs.length === 0, thumbs.join(", "));
+
+  // Every design renders on a phone: no errors, all photos load, nothing wider than the screen, 0 axe violations.
+  const failures = { errors: [], images: [], overflow: [], links: [], axe: [] };
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+  const page = await context.newPage();
+  let current = "";
+  page.on("pageerror", (e) => failures.errors.push(`${current}: ${e.message}`));
+  page.on("console", (m) => { if (["error", "warning"].includes(m.type())) failures.errors.push(`${current}: ${m.text()}`); });
+  page.on("response", (r) => { if (r.status() >= 400) failures.errors.push(`${current}: HTTP ${r.status()} ${r.url()}`); });
+  await page.addInitScript({ content: AXE_SOURCE });
+  for (const d of designs.filter((x) => !x.featured)) {
+    current = d.id;
+    await page.goto(`${ORIGIN}/designs/${d.url}`, { waitUntil: "networkidle" });
+    await page.waitForSelector(".site-footer", { timeout: 10000 }).catch(() => failures.errors.push(`${d.id}: page did not finish rendering`));
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.body.scrollHeight; y += 700) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 30)); }
+    });
+    await page.waitForLoadState("networkidle");
+    const r = await page.evaluate(async () => {
+      // Lazy photos further down may still be on their way; load them all, then check.
+      await Promise.all([...document.images].map((i) => { i.loading = "eager"; return i.decode().catch(() => {}); }));
+      const badImgs = [...document.images].filter((i) => !(i.complete && i.naturalWidth > 0)).map((i) => i.getAttribute("src"));
+      const docW = document.documentElement.clientWidth;
+      const wide = [...document.querySelectorAll("body *")].filter((el) => {
+        const b = el.getBoundingClientRect();
+        return b.width && (b.right > docW + 1 || b.left < -1) && !el.closest(".gallery, .menu-filters, .skip-link");
+      }).length;
+      const missing = [...document.querySelectorAll('a[href^="#"]')].map((a) => a.getAttribute("href").slice(1)).filter((id) => id && !document.getElementById(id));
+      const axeRun = await window.axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"] } });
+      return { badImgs, wide, missing, axe: axeRun.violations.map((v) => `${v.id} (${v.nodes.length})`) };
+    });
+    if (r.badImgs.length) failures.images.push(`${d.id}: ${r.badImgs.join(", ")}`);
+    if (r.wide) failures.overflow.push(`${d.id}: ${r.wide} element(s)`);
+    if (r.missing.length) failures.links.push(`${d.id}: #${r.missing.join(", #")}`);
+    if (r.axe.length) failures.axe.push(`${d.id}: ${r.axe.join(", ")}`);
+  }
+  const n = designs.filter((x) => !x.featured).length;
+  check(`[designs] all ${n} designs render with no console errors or broken requests`, failures.errors.length === 0, failures.errors.slice(0, 5).join(" | "));
+  check(`[designs] all ${n} designs load every photo`, failures.images.length === 0, failures.images.slice(0, 5).join(" | "));
+  check(`[designs] no design is wider than a 390 px phone`, failures.overflow.length === 0, failures.overflow.slice(0, 5).join(" | "));
+  check(`[designs] every in-page link in every design points to a section`, failures.links.length === 0, failures.links.slice(0, 5).join(" | "));
+  check(`[designs] axe-core accessibility scan: 0 violations in all ${n} designs`, failures.axe.length === 0, failures.axe.slice(0, 8).join(" | "));
+  await context.close();
+}
+{
+  const { page, context, problems } = await openPage(PAGES.gallery, { width: 390, height: 844 }, { mobile: true });
+  const total = CATALOG.designs.length;
+  check("[gallery] shows every design, and the heading says how many", (await page.locator(".g-card").count()) === total && (await page.textContent("h1")).includes(String(total)));
+  await page.fill("#finder-input", "I own a taco truck");
+  await page.press("#finder-input", "Enter");
+  await page.waitForTimeout(400);
+  const tacoCards = await page.locator(".g-card").evaluateAll((c) => c.map((x) => x.getAttribute("data-industry")));
+  check("[gallery] 'What business are you in?' → \"I own a taco truck\" shows only Mexican restaurant designs",
+    tacoCards.length === CATALOG.forIndustry("taqueria").length && tacoCards.every((i) => i === "taqueria") && (await page.textContent("[data-results-title]")) === "You might like these",
+    tacoCards.join(","));
+  check("[gallery] the address bar remembers the choice (?type=)", page.url().endsWith("/designs/?type=taqueria"));
+  await page.locator(".link-btn[data-clear]").tap();
+  await page.locator(".g-chip", { hasText: "Home services" }).tap();
+  const home = await page.locator(".g-card").evaluateAll((c) => c.map((x) => x.getAttribute("data-industry")));
+  check("[gallery] 'Home services' filter shows only home-service designs",
+    home.length > 0 && home.every((i) => CATALOG.industry(i).group === "Home services"), `${home.length} cards`);
+  await page.fill("#finder-input", "bowling alley");
+  await page.press("#finder-input", "Enter");
+  await page.waitForTimeout(300);
+  check("[gallery] a business with no sample shows a helpful message and the quote link",
+    (await page.locator(".g-card").count()) === 0 && (await page.locator("[data-empty]").isVisible()));
+  check("[gallery] no console errors", problems.length === 0, problems.join(" | "));
+  await page.screenshot({ path: fileURLToPath(new URL("gallery-phone.png", OUT)) });
+  await context.close();
+
+  const typed = await openPage("/designs/?type=bakery", { width: 1280, height: 800 });
+  const bakery = await typed.page.locator(".g-card").evaluateAll((c) => c.map((x) => x.getAttribute("data-industry")));
+  check("[gallery] a ?type= link (from a design's 'More … designs') opens that business type",
+    bakery.length === CATALOG.forIndustry("bakery").length && bakery.every((i) => i === "bakery") && (await typed.page.inputValue("#finder-input")) === "Bakery");
+  await typed.page.screenshot({ path: fileURLToPath(new URL("gallery-desktop.png", OUT)) });
+  const first = typed.page.locator(".g-card").first();
+  const like = await first.locator("a", { hasText: "I like this one" }).getAttribute("href");
+  const id = new URLSearchParams(like.split("?")[1].split("#")[0]).get("design");
+  await typed.page.goto(new URL(like, typed.page.url()).href, { waitUntil: "networkidle" });
+  const chosen = CATALOG.find(id);
+  check("[gallery] 'I like this one' opens the quote form with the design and business type filled in",
+    (await typed.page.inputValue("#f-message")).includes(chosen.name) && (await typed.page.inputValue("#f-type")) === CATALOG.industry(chosen.industry).form,
+    await typed.page.inputValue("#f-message"));
+  await typed.context.close();
+}
+{
+  const d = CATALOG.find("ember-and-oak-steakhouse");
+  const { page, context, problems } = await openPage(PAGES.design, { width: 390, height: 844 }, { mobile: true });
+  check("[design] page title and heading use the design's fictional business",
+    (await page.title()).startsWith(d.name) && (await page.textContent("h1")) === d.name);
+  check("[design] demo banner says it's a fictional sample", /fictional/i.test(await page.textContent(".demo-bar")));
+  check("[design] banner links back to more designs of the same type", (await page.getAttribute(".demo-bar__back", "href")) === "./?type=restaurant");
+  check("[design] studio panel asks about this exact design",
+    (await page.getAttribute(".agency__btn--primary", "href")) === "../?design=ember-and-oak-steakhouse#inquire" &&
+      (await page.getAttribute(".agency__btn >> text=More sample designs", "href")) === "./");
+  check("[design] phone numbers are 555-01xx fictional numbers", (await page.locator('a[href^="tel:"]').evaluateAll((a) => a.every((x) => /55501\d\d$/.test(x.getAttribute("href"))))));
+  check("[design] no console errors", problems.length === 0, problems.join(" | "));
+  await context.close();
+
+  const missing = await openPage("/designs/view.html?d=no-such-design", { width: 390, height: 844 }, { mobile: true });
+  check("[design] an unknown design shows a friendly message with a link to the gallery",
+    /couldn’t find that design/.test(await missing.page.textContent("main")) && (await missing.page.locator('main a[href="./"]').count()) === 1);
+  await missing.context.close();
+  const featured = await openPage("/designs/view.html?d=harbor-hearth-kitchen", { width: 390, height: 844 }, { mobile: true });
+  check("[design] the two full samples open their own pages", featured.page.url().endsWith("/demos/restaurant/"));
+  await featured.context.close();
+}
+{
+  // tools/export-design.mjs turns a gallery design into an editable website folder.
+  const folder = "zz-test-export";
+  const target = join(ROOT, "site", "demos", folder);
+  await rm(target, { recursive: true, force: true });
+  const run = (args) => new Promise((resolve) => execFile(process.execPath, [fileURLToPath(new URL("./export-design.mjs", import.meta.url)), ...args], (err, stdout, stderr) => resolve({ code: err ? err.code : 0, out: stdout + stderr })));
+  const made = await run(["sugar-and-spoon-bakeshop", folder]);
+  const files = await readdir(target).catch(() => []);
+  check("[export] export-design.mjs creates index.html, config.js, images/ and engine/",
+    made.code === 0 && ["index.html", "config.js", "images", "engine", "favicon.svg"].every((f) => files.includes(f)), made.out.trim().split("\n")[0]);
+  const again = await run(["sugar-and-spoon-bakeshop", folder]);
+  check("[export] it won't overwrite an existing folder without --force", again.code !== 0 && /already exists/.test(again.out));
+  const { page, context, problems } = await openPage(`/demos/${folder}/`, { width: 390, height: 844 }, { mobile: true });
+  await scrollThrough(page);
+  const imgsOk = await page.evaluate(() => [...document.images].every((i) => i.complete && i.naturalWidth > 0));
+  check("[export] the exported site works on its own: same business, photos load, no errors",
+    (await page.textContent("h1")) === "Sugar & Spoon Bakeshop" && imgsOk && problems.length === 0, problems.join(" | "));
+  const cfgText = await readFile(join(target, "config.js"), "utf8");
+  check("[export] config.js is plain and editable (no gallery paths left)", !/photos\/|\.\.\/demos\//.test(cfgText) && /demoMode: true/.test(cfgText));
+  await context.close();
+  await rm(target, { recursive: true, force: true });
 }
 
 // ---------------------------------------------------------------------------
@@ -730,6 +965,17 @@ for (const [name, fg, bg] of [
 ]) {
   const r = ratio(fg, bg);
   check(`[studio] contrast: ${name} ≥ 4.5:1`, r >= 4.5, `${r}:1`);
+}
+for (const [id, style] of Object.entries(CATALOG.styles)) {
+  const t = style.theme;
+  const low = [
+    ["text", t.text, t.background], ["text on cards", t.text, t.surface],
+    ["muted", t.mutedText, t.background], ["muted on cards", t.mutedText, t.surface], ["muted on alt sections", t.mutedText, t.surfaceAlt],
+    ["headings", t.primary, t.background], ["headings on cards", t.primary, t.surface],
+    ["prices/labels", t.accent, t.background], ["prices on cards", t.accent, t.surface],
+    ["buttons", t.onCta, t.cta], ["on primary", t.onDark, t.primary], ["footer", t.onFooter || t.onDark, t.footer || t.primary],
+  ].map(([name, fg, bg]) => [name, ratio(fg, bg)]).filter(([, r]) => r < 4.5);
+  check(`[designs] contrast: '${style.label}' style colors all ≥ 4.5:1`, low.length === 0, low.map(([n, r]) => `${n} ${r}:1`).join(", "));
 }
 
 await browser.close();

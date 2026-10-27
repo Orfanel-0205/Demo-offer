@@ -1,6 +1,7 @@
 // Copies the master template engine (engine/) into every demo folder
 // (site/demos/<name>/engine/), so each demo is a complete, self-contained
-// website that can be published or copied for a client on its own.
+// website that can be published or copied for a client on its own, and into
+// the design gallery (site/designs/engine/), which shows every sample design.
 //
 // Usage (from the repository root or tools/):  node tools/sync-engine.mjs [--check]
 //   --check  only report demos whose engine copy differs (exit code 1 if any)
@@ -27,10 +28,11 @@ async function listFiles(dir) {
 
 const files = await listFiles(master);
 const demos = (await readdir(demosDir, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name);
+const targets = demos.map((demo) => [demo, join(demosDir, demo, "engine")]);
+targets.push(["designs", join(root, "site", "designs", "engine")]);
 let stale = 0;
 
-for (const demo of demos) {
-  const target = join(demosDir, demo, "engine");
+for (const [demo, target] of targets) {
   const diffs = [];
   for (const file of files) {
     const rel = relative(master, file);

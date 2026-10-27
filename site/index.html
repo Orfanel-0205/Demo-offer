@@ -11,8 +11,9 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Bright Site Tech — Websites for Local Businesses" />
     <meta property="og:description" content="Mobile-friendly websites for restaurants, auto shops and local businesses. Fixed prices from $149." />
-    <!-- Once the site is live, change this to the full address, e.g. https://www.yourdomain.com/assets/img/og-image.jpg -->
-    <meta property="og:image" content="assets/img/og-image.jpg" />
+    <!-- Link previews need the full address. If you move to your own domain, change both lines. -->
+    <meta property="og:url" content="https://my-services-x4kc.onrender.com/" />
+    <meta property="og:image" content="https://my-services-x4kc.onrender.com/assets/img/og-image.jpg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#0B1B33" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -38,7 +39,7 @@
         </button>
         <nav class="nav" id="nav" aria-label="Main" data-nav>
           <ul class="nav__list">
-            <li><a href="#work">Work</a></li>
+            <li><a href="designs/">Designs</a></li>
             <li><a href="#packages">Packages</a></li>
             <li><a href="#process">How it works</a></li>
             <li><a href="#faq">FAQ</a></li>
@@ -92,6 +93,13 @@
             </p>
           </header>
           <div class="work" data-portfolio></div>
+          <div class="work-more">
+            <div>
+              <h3><span data-design-count>100+</span> designs to choose from</h3>
+              <p>Restaurants, salons, auto shops, home services, clinics and more. Tell us what business you&rsquo;re in and see designs made for it.</p>
+            </div>
+            <a class="btn btn--amber" href="designs/">Browse all designs</a>
+          </div>
         </div>
       </section>
 
@@ -189,6 +197,10 @@
             <details data-topic="needs" data-keywords="need provide send content photos pictures checklist information details prepare">
               <summary>What do you need from me?</summary>
               <p>Your business name, address, phone, opening hours, menu or list of services with prices, a few photos you own, your logo if you have one, and links to any booking, ordering or social pages. We send a checklist.</p>
+            </details>
+            <details data-topic="mobile" data-keywords="mobile phones smartphone smartphones friendly responsive iphone android tablet tablets screen screens">
+              <summary>Will my website work on phones?</summary>
+              <p>Yes. Every design is built for phones first and also works on tablets and computers. You check the preview on your own phone before anything goes live.</p>
             </details>
             <details data-topic="timeline" data-keywords="long time fast quick days weeks timeline turnaround ready deadline soon">
               <summary>How long does it take?</summary>
@@ -340,6 +352,7 @@
         </div>
         <nav aria-label="Footer">
           <ul class="footer__links">
+            <li><a href="designs/">All designs</a></li>
             <li><a href="#work">Sample designs</a></li>
             <li><a href="#packages">Packages</a></li>
             <li><a href="#process">How it works</a></li>
@@ -360,6 +373,7 @@
     </aside>
 
     <script src="agency.config.js"></script>
+    <script src="designs/catalog.js"></script>
     <script src="assets/js/site.js"></script>
     <script src="assets/js/assistant.js"></script>
   </body>

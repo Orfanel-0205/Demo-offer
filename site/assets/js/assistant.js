@@ -1,8 +1,11 @@
 /* =============================================================================
    Bright Site Tech — chat assistant ("Questions?" button)
    A guided chat with preset answers. It answers from agency.config.js
-   (packages, samples, contact details) and from the FAQ, "Who we help" and
-   "How it works" sections of this page, so editing those updates its answers.
+   (packages, samples, contact details), from the design gallery
+   (designs/catalog.js) and from the FAQ, "Who we help" and "How it works"
+   sections of this page, so editing those updates its answers.
+   A small "What business are you in?" bubble next to the button leads
+   visitors to designs for their type of business.
    Questions it can't match go to a person: WhatsApp, email or the quote form.
    Runs entirely in the browser: no AI service, nothing typed is sent or saved.
    ========================================================================== */
@@ -45,6 +48,11 @@
     return n ? "https://wa.me/" + n : "";
   }
   var whatsapp = whatsappUrl(contact.whatsapp);
+
+  // The design gallery, when designs/catalog.js is loaded on this page.
+  var C = window.DESIGN_CATALOG;
+  var GALLERY = "designs/";
+  var waitingForType = false;
 
   /* ---------- Matching questions to topics ---------------------------------- */
   var STOP = (
@@ -157,14 +165,30 @@
         var other = industries.filter(function (h) { return /\?$/.test(text(h)); })[0];
         return {
           html: para("Yes. We design websites for:") + list(named.map(function (h) { return esc(text(h)); })) + (other ? para(text(other.nextElementSibling)) : ""),
-          actions: [{ label: "See the sample designs", href: "#work" }],
+          actions: [C ? { label: "Find designs for your business", href: GALLERY } : { label: "See the sample designs", href: "#work" }],
           next: ["samples", "prices", "start"],
         };
       },
     });
   }
 
-  if ((A.portfolio || []).length) {
+  if (C) {
+    add("samples", {
+      chip: "Show me designs for my business",
+      keywords: "example examples sample samples portfolio demo demos previous past show see look looks template templates design designs gallery style styles",
+      answer: function () {
+        return {
+          html:
+            para("We have " + C.designs.length + " sample designs for " + C.industries.length + " types of local business. " +
+              "They're fictional businesses we made to show our work, so you can try each one like a real website.") +
+            "<p><strong>What business are you in?</strong> Tap one below or type it.</p>",
+          actions: [{ label: "Browse all " + C.designs.length + " designs", href: GALLERY }],
+          next: ["ind:restaurant", "ind:hair-salon", "ind:barber", "ind:auto-repair", "ind:plumbing", "ind:cleaning"],
+          awaitType: true,
+        };
+      },
+    });
+  } else if ((A.portfolio || []).length) {
     add("samples", {
       chip: "Can I see examples?",
       keywords: "example examples sample samples portfolio demo demos previous past show see look looks template templates design designs",
@@ -218,6 +242,51 @@
       },
     });
   });
+
+  // One topic per type of business in the gallery: "I own a bakery" → bakery designs.
+  // They come after the FAQ, so a question about photos or payments still gets the FAQ answer.
+  function designsFor(ind, yes) {
+    var all = C.forIndustry(ind.id);
+    return {
+      html:
+        para((yes ? "Yes! " : "") + "You might like these " + C.noun(ind.id) + " designs:") +
+        '<ul class="assistant__designs">' +
+        all.slice(0, 3).map(function (d) {
+          return '<li><a class="assistant__design" href="' + esc(C.path(d.url, GALLERY)) + '">' +
+            '<img src="' + esc(C.path(d.thumb, GALLERY)) + '" alt="" width="640" height="400" loading="lazy" decoding="async" />' +
+            "<span><strong>" + esc(d.name) + "</strong><small>" + esc(d.styleLabel) + " style</small></span></a></li>";
+        }).join("") +
+        "</ul>" +
+        para("Each one is a sample. Yours would use your own name, prices, hours and photos."),
+      actions: [
+        { label: "See all " + all.length + " " + C.noun(ind.id) + " designs", href: GALLERY + "?type=" + ind.id },
+        { label: "Ask about a site like these", href: "#inquire", industry: ind.form },
+      ],
+      next: ["prices", "faq:timeline", "start"],
+    };
+  }
+  if (C) {
+    C.industries.forEach(function (ind) {
+      add("ind:" + ind.id, {
+        chip: ind.label,
+        keywords: ind.keywords,
+        answer: function () { return designsFor(ind); },
+      });
+    });
+  }
+
+  function noSample(question) {
+    return {
+      html:
+        para("We don't have a sample for that business yet, but the same layouts work for most local businesses that customers call, visit or book.") +
+        para("Browse the gallery for a style you like, or tell us about your business and we'll suggest the closest designs."),
+      actions: [
+        { label: "Browse all " + C.designs.length + " designs", href: GALLERY },
+        { label: "Add my business to the quote form", toForm: "My business: " + question },
+      ],
+      next: ["prices", "contact"],
+    };
+  }
 
   var steps = $$("#process h3");
   add("start", {
@@ -279,6 +348,19 @@
       .map(function (id) { return { id: id, score: score(topics[id], query) }; })
       .filter(function (r) { return r.score >= 2; })
       .sort(function (a, b) { return b.score - a.score; });
+    var expectingType = waitingForType;
+    waitingForType = false;
+    // Right after "What business are you in?", look harder for a business type.
+    if (expectingType && C && !(ranked[0] && /^ind:/.test(ranked[0].id))) {
+      var found = C.match(question)[0];
+      if (found) return designsFor(found);
+      if (!ranked.length || ranked[0].score < 3) return noSample(question);
+    }
+    // "Do you work with plumbers?" → yes, with plumbing designs rather than the general list.
+    if (C && ranked[0] && ranked[0].id === "industries") {
+      var named = C.match(question)[0];
+      if (named) return designsFor(named, true);
+    }
     if (ranked.length) {
       var reply = topics[ranked[0].id].answer();
       // Offer the runner-up too, in case it was the better match.
@@ -299,9 +381,22 @@
   var ICON_CLOSE = svg('<path d="M18 6 6 18M6 6l12 12"/>');
   var ICON_SEND = svg('<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>', 20);
 
+  var TEASER = [["ind:restaurant", "Restaurant"], ["ind:hair-salon", "Salon"], ["ind:auto-repair", "Auto repair"], ["ind:plumbing", "Home services"], ["samples", "Something else"]];
+  var teaserHtml = C && settings.teaser !== false
+    ? '<aside class="assistant-teaser" aria-label="Find designs for your business" data-assistant-teaser hidden>' +
+      '<p class="assistant-teaser__q">What business are you in?</p>' +
+      '<p class="assistant-teaser__sub">See website designs made for it.</p>' +
+      '<div class="assistant-teaser__chips">' +
+      TEASER.map(function (t) { return '<button type="button" class="assistant-teaser__chip" data-teaser="' + t[0] + '">' + esc(t[1]) + "</button>"; }).join("") +
+      "</div>" +
+      '<button type="button" class="assistant-teaser__close" data-teaser-close>' + ICON_CLOSE + '<span class="sr-only">Dismiss</span></button>' +
+      "</aside>"
+    : "";
+
   document.documentElement.classList.add("has-assistant");
   host.insertAdjacentHTML(
     "beforeend",
+    teaserHtml +
     '<button type="button" class="assistant-launcher" aria-expanded="false" aria-controls="assistant" data-assistant-launcher>' + ICON_CHAT +
       '<span class="assistant-launcher__label">Questions?</span><span class="sr-only"> Chat with our assistant</span></button>' +
       '<div class="assistant" id="assistant" role="dialog" aria-labelledby="assistant-title" aria-describedby="assistant-note" tabindex="-1" hidden>' +
@@ -330,6 +425,8 @@
   var input = document.getElementById("assistant-input");
   var phoneSheet = window.matchMedia("(max-width: 599px)");
   var started = false;
+  var teaser = host.querySelector("[data-assistant-teaser]");
+  var TEASER_KEY = "bst-teaser-closed";
 
   // On phones the chat covers the whole screen, so the page behind it is made inert.
   function setPageInert(on) {
@@ -341,7 +438,42 @@
     });
   }
 
+  /* The bubble appears once per visit, a few seconds after the page opens,
+     and stays away for the rest of the visit once used or dismissed. */
+  function hideTeaser() {
+    if (!teaser || teaser.hidden) return;
+    teaser.hidden = true;
+    try {
+      sessionStorage.setItem(TEASER_KEY, "1");
+    } catch (err) {}
+  }
+  if (teaser) {
+    var seen = false;
+    try {
+      seen = sessionStorage.getItem(TEASER_KEY) === "1";
+    } catch (err) {}
+    if (!seen) {
+      setTimeout(function () {
+        if (panel.hidden && !started) teaser.hidden = false;
+      }, settings.teaserDelay || 5000);
+    }
+    teaser.addEventListener("click", function (e) {
+      var chip = e.target.closest("[data-teaser]");
+      if (e.target.closest("[data-teaser-close]")) {
+        hideTeaser();
+        launcher.focus();
+      } else if (chip) {
+        var id = chip.getAttribute("data-teaser");
+        hideTeaser();
+        open();
+        ask(chip.textContent, topics[id].answer());
+        if (id === "samples") input.focus();
+      }
+    });
+  }
+
   function open() {
+    hideTeaser();
     panel.hidden = false;
     launcher.setAttribute("aria-expanded", "true");
     document.documentElement.classList.add("assistant-open");
@@ -376,6 +508,7 @@
     if (a.toForm) return '<button type="button" class="' + cls + '" data-to-form="' + esc(a.toForm) + '">' + esc(a.label) + "</button>";
     return (
       '<a class="' + cls + '" href="' + esc(a.href) + '"' + (a.pkg ? ' data-package="' + esc(a.pkg) + '"' : "") +
+      (a.industry ? ' data-industry="' + esc(a.industry) + '"' : "") +
       (a.external ? ' target="_blank" rel="noopener"' : "") + ">" + esc(a.label) +
       (a.external ? '<span class="sr-only"> (opens in a new tab)</span>' : "") + "</a>"
     );
@@ -403,6 +536,7 @@
       msg.appendChild(row);
     }
     setChips(reply.next);
+    waitingForType = !!reply.awaitType;
     log.scrollTop = Math.max(0, msg.offsetTop - 56);
   }
 
@@ -427,7 +561,12 @@
     close(true);
   });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !panel.hidden) close(true);
+    if (e.key !== "Escape") return;
+    if (!panel.hidden) close(true);
+    else if (teaser && !teaser.hidden && teaser.contains(document.activeElement)) {
+      hideTeaser();
+      launcher.focus();
+    }
   });
   phoneSheet.addEventListener("change", function () {
     if (!panel.hidden) open();

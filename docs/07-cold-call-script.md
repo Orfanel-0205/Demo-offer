@@ -42,7 +42,7 @@ Spend 30 seconds on Google Maps, Yelp, Facebook or Instagram. Examples:
 
 Only say something you actually saw. Never invent a problem, and never criticize their business.
 
-**Have ready:** your website link and the sample link for their industry, a lead sheet, and your email address.
+**Have ready:** your website link and the gallery link for their type of business (e.g. `…/designs/?type=barber`, list in [guide 12](12-design-gallery.md)), a lead sheet, and your email address.
 
 ### Stay compliant and respectful
 

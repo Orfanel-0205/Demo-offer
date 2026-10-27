@@ -94,7 +94,7 @@ Your website has a chat button in the bottom-right corner. It opens a small chat
 - **which package fits**, as a two-question guide;
 - **every FAQ answer**, from the FAQ section of `site/index.html`;
 - **the industries you serve** and **how it works**, from those sections of the page;
-- **sample designs**, from `portfolio`.
+- **sample designs for the visitor's type of business**: "What business are you in?" → "You might like these" with three previews from the [design gallery](12-design-gallery.md).
 
 Visitors can tap suggested questions or type their own. When it doesn't know an answer, it says so and offers **WhatsApp**, **email** (with the question already filled in), or **"Add my question to the quote form"**.
 
@@ -102,7 +102,9 @@ Visitors can tap suggested questions or type their own. When it doesn't know an 
 
 **Changing its answers:** edit the FAQ, packages or sections. The assistant uses them automatically. To add a new FAQ answer, copy one of the `<details …>` blocks in the FAQ section of `site/index.html`, change the question and answer, and put the words people might type in `data-keywords` (for example `data-keywords="spanish language translate"`).
 
-**Settings** (in `agency.config.js` → `assistant`): `name`, the `greeting`, and `enabled: false` to switch it off.
+**The bubble:** a few seconds after the page opens, a small *"What business are you in?"* bubble appears beside the chat button with a few business types. Tapping one opens the chat with matching designs. It shows once per visit.
+
+**Settings** (in `agency.config.js` → `assistant`): `name`, the `greeting`, `teaser: false` to turn off the bubble, and `enabled: false` to switch the whole assistant off.
 
 > **Want a real AI assistant later?** It's possible, but it needs a server function with an API key kept secret, which this static site doesn't have. You'd pay for usage, and you'd need limits so it can't be abused or make promises you can't keep. Revisit once you have paying clients.
 

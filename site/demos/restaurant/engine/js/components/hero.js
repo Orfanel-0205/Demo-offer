@@ -5,6 +5,7 @@
    config.hero.primary   → { label, href, icon }   (default: menu link)
    config.hero.secondary → "directions" | "call" | { label, href, icon }
    config.layout.hero    → "arch" (photo beside text) | "fullbleed" (photo behind)
+                           | "center" | "split" | "banner" (see styles.css)
    ========================================================================== */
 (function (RL) {
   "use strict";

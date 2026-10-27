@@ -22,6 +22,9 @@
         primary: "--color-primary",
         accent: "--color-accent",
         onDark: "--color-on-dark",
+        onPhoto: "--color-on-photo",
+        footer: "--color-footer",
+        onFooter: "--color-on-footer",
         cta: "--color-cta",
         onCta: "--color-on-cta",
         radius: "--radius",
@@ -34,8 +37,11 @@
       if (theme.fontBody) root.style.setProperty("--font-body", '"' + theme.fontBody + '", system-ui, sans-serif');
       if (theme.headingCase === "uppercase") root.classList.add("headings-upper");
       if (theme.italicAccents === false) root.classList.add("no-italic-accents");
+      // Dark designs: also set onPhoto (text over photos) and footer/onFooter.
+      if (theme.colorScheme === "dark") root.style.setProperty("color-scheme", "dark");
     }
     root.setAttribute("data-hero", (layout && layout.hero) || "arch");
+    root.setAttribute("data-menu", (layout && layout.menu) || "list");
   }
 
   function setMeta(selector, attr, value) {

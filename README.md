@@ -4,7 +4,8 @@
 
 Everything for a one-person web design studio that builds mobile-friendly websites for **US restaurants, auto repair shops and other local businesses**:
 
-- **The Bright Site Tech website** ([`site/`](site/)): portfolio, packages (**$149** Starter, **$249** Business, optional **$39/month** updates), FAQ, an easy inquiry form, WhatsApp contact with a QR code, and a **chat assistant** that answers common questions instantly.
+- **The Bright Site Tech website** ([`site/`](site/)): portfolio, packages (**$149** Starter, **$249** Business, optional **$39/month** updates), FAQ, an easy inquiry form, WhatsApp contact with a QR code, and a **chat assistant** that answers common questions instantly, with a *"What business are you in?"* bubble that leads to matching designs.
+- **A gallery of 110 sample designs** ([`site/designs/`](site/designs/)) for 27 types of local business in 15 styles. Visitors type their business and see *"You might like these"*; every design is a working website, and `tools/export-design.mjs` turns any of them into an editable client folder ([guide 12](docs/12-design-gallery.md)).
 - **Two sample designs** for fictional businesses, each a complete, reusable website template:
   - 🍽️ **Harbor & Hearth Kitchen** (restaurant): warm editorial design, filterable menu, live opening hours, reservation/delivery buttons.
   - 🔧 **Copperline Auto Care** (auto repair): bold high-contrast design, services with starting prices, book/quote/text buttons, one-tap calling.
@@ -12,7 +13,7 @@ Everything for a one-person web design studio that builds mobile-friendly websit
 - **Demo videos** ([`videos/`](videos/)) to send to prospects.
 - **Guides** ([`docs/`](docs/)) for deploying from your phone, customizing for clients, cold calling, onboarding and your first 30 days.
 
-> The sample businesses are **fictional**. Their menus, prices, hours, addresses and phone numbers are sample content, and the pages say so. Photos are CC0 stock images ([credits](docs/image-credits.md)).
+> The sample businesses, including all 110 gallery designs, are **fictional**. Their menus, prices, hours, addresses and phone numbers are sample content, and the pages say so. Photos are CC0 stock images ([credits](docs/image-credits.md)).
 
 ---
 
@@ -23,6 +24,13 @@ site/                              ← published by Render (your website)
 ├── index.html                     ← Bright Site Tech home page
 ├── agency.config.js               ★ your packages, prices, contact details, inquiry form, portfolio list
 ├── assets/                        ← your logo, styles, scripts, portfolio screenshots
+├── designs/                       ← the design gallery (/designs/)
+│   ├── index.html · gallery.js    ← "What business are you in?" + all designs
+│   ├── view.html · view.js        ← shows any design: view.html?d=<design-id>
+│   ├── catalog.js                 ★ every design: name, type of business, style, city; the 15 styles
+│   ├── content/<type>.js          ★ sample menu/services, prices, hours and text per type of business
+│   ├── photos/ · thumbs/          ← CC0 photos per type of business · gallery thumbnails
+│   └── engine/                    ← template code (copied from /engine — don't edit here)
 └── demos/
     ├── restaurant/                ← Harbor & Hearth Kitchen  (/demos/restaurant/)
     │   ├── index.html
@@ -39,7 +47,7 @@ render.yaml · vercel.json          ← hosting settings (both publish only site
 ```
 
 - **One file per business.** Each demo's `config.js` holds the name, colors, fonts, menu or services and prices, hours, address, buttons, photos and text. Change it and the site updates.
-- **Each demo folder is a complete website.** For a paying client, copy the closest demo and publish just that folder (see [guide 3](docs/03-customize-for-a-client.md)).
+- **Each demo folder is a complete website.** For a paying client, export the design they picked from the gallery (or copy the closest demo) and publish just that folder (see [guide 3](docs/03-customize-for-a-client.md)).
 - **Your prices live in one place:** `site/agency.config.js`. The home page, the chat assistant, the panel under each demo and the video end cards all read from it.
 - **The chat assistant answers from your own content** (packages, FAQ, samples) and hands everything else to you on WhatsApp, by email or through the form. It isn't an AI and costs nothing ([guide 2](docs/02-set-up-the-inquiry-form.md#the-chat-assistant-questions-button)).
 
@@ -58,6 +66,7 @@ render.yaml · vercel.json          ← hosting settings (both publish only site
 | 9 | [Client onboarding checklist](docs/09-client-onboarding-checklist.md) | Collecting content |
 | 10 | [First paying client in 30 days](docs/10-first-client-30-day-plan.md) | Planning your month |
 | 11 | [Test report](docs/11-test-report.md) | What's been checked |
+| 12 | [Design gallery](docs/12-design-gallery.md): links to send prospects, turning a design into a client site | When an owner asks to see designs, or picks one |
 | — | [Brand guide](brand/README.md) · [Image credits](docs/image-credits.md) | Using your logo · photo licenses |
 
 ## Quick start (phone only)
@@ -81,9 +90,11 @@ Domain, third-party tools and anything not listed are separate. Scope is confirm
 ```bash
 node tools/serve.mjs                 # preview at http://localhost:8080
 cd tools && npm install
-npm test                             # 226 automated checks across all three sites
-node sync-engine.mjs                 # copy engine/ changes into every demo
+npm test                             # 356 automated checks: your site, both samples, the gallery and all 108 designs
+node sync-engine.mjs                 # copy engine/ changes into every demo and the gallery
 node capture-portfolio.mjs           # refresh portfolio screenshots
+node capture-designs.mjs [id …]      # make gallery thumbnails (all designs, or just the ids given)
+node export-design.mjs <id> <folder> # turn a gallery design into site/demos/<folder>/ for a client
 node render-brand.mjs                # re-export logo PNGs and the link-preview image
 npm run qr                           # remake the WhatsApp QR code from agency.config.js
 npm run videos                       # re-record the demo videos (needs ffmpeg)

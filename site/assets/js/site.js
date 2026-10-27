@@ -51,6 +51,12 @@
       el.textContent = A.packages[0].price;
     });
   }
+  var catalog = window.DESIGN_CATALOG;
+  if (catalog) {
+    $$("[data-design-count]").forEach(function (el) {
+      el.textContent = catalog.designs.length;
+    });
+  }
 
   /* ---------- Header & menu ------------------------------------------------ */
   var header = $("[data-header]");
@@ -224,6 +230,21 @@
       });
     }
   });
+
+  // Arriving from "I like this one" in the design gallery (?design=<id>):
+  // note the design in the message and pick the matching type of business.
+  var picked = "";
+  try {
+    picked = new URLSearchParams(window.location.search).get("design") || "";
+  } catch (err) {}
+  var pickedDesign = picked && catalog && catalog.find(picked);
+  if (pickedDesign) {
+    var pickedIndustry = catalog.industry(pickedDesign.industry);
+    form.elements.message.value = "I like the sample design “" + pickedDesign.name + "” (" + pickedIndustry.label + ", " + pickedDesign.styleLabel + " style).";
+    Array.prototype.forEach.call(form.elements.business_type.options, function (opt) {
+      if (opt.value === pickedIndustry.form) form.elements.business_type.value = opt.value;
+    });
+  }
 
   function method() {
     var checked = $('input[name="contact_method"]:checked', form);
