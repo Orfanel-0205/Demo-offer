@@ -22,14 +22,21 @@ window.AGENCY_CONFIG = {
 
   /* ---------------------------------------------------------------------------
      HOW PEOPLE REACH YOU — fill in at least the email. Leave "" to hide a line.
-     Use a business email, not a personal one (it is shown publicly).
-     whatsapp: digits only with country code, e.g. "639171234567".
+     Everything here is shown publicly on your website.
+     phoneDisplay / phoneLink: your business number once you have one,
+       e.g. "(555) 010-0000" and "+15550100000". Adds Call and Text buttons.
+     whatsapp: the link from your WhatsApp QR code (e.g. "https://wa.me/qr/…")
+       or digits only with country code (e.g. "639171234567").
+     whatsappQr: the QR code shown to visitors on a computer. If the WhatsApp
+       link changes, replace this image (tools/make-whatsapp-qr.mjs makes one,
+       or upload a screenshot of your QR code from WhatsApp).
      ------------------------------------------------------------------------ */
   contact: {
-    email: "",
+    email: "Clifford020005@gmail.com",
     phoneDisplay: "",
     phoneLink: "",
-    whatsapp: "",
+    whatsapp: "https://wa.me/qr/BATWZA4GHVGJG1",
+    whatsappQr: "assets/img/whatsapp-qr.svg",
     hours: "Calls and messages during US business hours, Monday to Friday.",
   },
 
@@ -43,6 +50,22 @@ window.AGENCY_CONFIG = {
   inquiry: {
     endpoint: "",
     replyTime: "We reply personally, usually within one business day.",
+  },
+
+  /* ---------------------------------------------------------------------------
+     CHAT ASSISTANT — the "Questions?" button on your website.
+     It answers from the packages and samples in this file and from the FAQ,
+     "Who we help" and "How it works" sections of site/index.html, so editing
+     those updates its answers. Anything else goes to you: WhatsApp, email or
+     the quote form. It runs in the visitor's browser: no AI service, no cost,
+     and nothing they type is sent or saved. enabled: false hides it.
+     ------------------------------------------------------------------------ */
+  assistant: {
+    enabled: true,
+    name: "Bright Site Tech assistant",
+    greeting:
+      "Hi! I can answer common questions about our websites, prices and how it works. " +
+      "For anything else, I'll connect you with a person.",
   },
 
   /* ---------------------------------------------------------------------------

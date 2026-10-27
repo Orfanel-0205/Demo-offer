@@ -11,6 +11,7 @@ import { startServer } from "./serve.mjs";
 
 const require = createRequire(import.meta.url);
 const AXE_SOURCE = await readFile(require.resolve("axe-core/axe.min.js"), "utf8");
+const JSQR_PATH = require.resolve("jsqr/dist/jsQR.js");
 const PORT = 8137;
 const ORIGIN = `http://localhost:${PORT}`;
 const OUT = new URL("./output/", import.meta.url);
@@ -31,6 +32,12 @@ const check = (name, ok, detail = "") => {
 
 const server = await startServer(PORT);
 const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || "chrome" });
+
+// The WhatsApp link the pages should use (same rule as site.js: links as-is, numbers become wa.me links).
+const whatsappLink = (value = "") =>
+  /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(value.trim()) ? value.trim() : value.replace(/\D/g, "") ? "https://wa.me/" + value.replace(/\D/g, "") : "";
+// Config patches that replace a contact detail, whatever it's currently set to.
+const setContact = (field, value) => (src) => src.replace(new RegExp(`${field}: "[^"]*"`), `${field}: "${value}"`);
 
 async function openPage(path, viewport, { mobile = false, timezoneId, configPatch, agencyPatch, routes } = {}) {
   const context = await browser.newContext({ viewport, deviceScaleFactor: mobile ? 2 : 1, isMobile: mobile, hasTouch: mobile, timezoneId });
@@ -188,7 +195,9 @@ for (const [key, path] of Object.entries(PAGES)) {
   check(`[${key}] all in-page links point to existing sections`, missing.length === 0, missing.join(", "));
   const external = links.filter((l) => /^https?:/.test(l.href));
   check(`[${key}] external links open safely in a new tab`, external.every((l) => l.target === "_blank" && l.rel.includes("noopener")));
-  check(`[${key}] no invented external URLs (only Google Maps directions)`, external.every((l) => l.href.startsWith("https://www.google.com/maps/dir/?api=1&destination=")),
+  const wa = whatsappLink(await page.evaluate(() => window.AGENCY_CONFIG?.contact?.whatsapp || ""));
+  check(`[${key}] no invented external URLs (only Google Maps directions and your WhatsApp link)`,
+    external.every((l) => l.href.startsWith("https://www.google.com/maps/dir/?api=1&destination=") || (wa && l.href === wa)),
     external.map((l) => l.href).join(", "));
   if (EXPECTED_TEL[key]) {
     const tel = links.filter((l) => l.href.startsWith("tel:"));
@@ -271,8 +280,11 @@ for (const [key, path] of Object.entries(PAGES)) {
     logo: !!document.querySelector(".agency__brand img"),
     packages: document.querySelectorAll(".agency .package").length,
     inquire: document.querySelector('.agency a[href="../../#inquire"]') !== null,
+    whatsapp: [...document.querySelectorAll(".agency a")].find((a) => a.textContent.includes("WhatsApp"))?.getAttribute("href") || "",
   }));
   check("[restaurant] studio panel shows the logo, 3 packages and a link to the inquiry form", panel.logo && panel.packages === 3 && panel.inquire, JSON.stringify(panel));
+  const panelWa = whatsappLink(await page.evaluate(() => window.AGENCY_CONFIG.contact.whatsapp || ""));
+  check("[restaurant] studio panel's WhatsApp button uses your WhatsApp link (when set)", panel.whatsapp === panelWa, panel.whatsapp || "(none)");
   check("[restaurant] no console errors during interactions", problems.length === 0, problems.join(" | "));
   await page.screenshot({ path: fileURLToPath(new URL("restaurant-phone-end.png", OUT)) });
   await context.close();
@@ -325,7 +337,9 @@ for (const [key, path] of Object.entries(PAGES)) {
 // 3c. Bright Site Tech website
 // ---------------------------------------------------------------------------
 {
-  const { page, context, problems } = await openPage(PAGES.studio, { width: 390, height: 844 }, { mobile: true });
+  // Email and WhatsApp cleared, so the end of this block can check the "isn't connected" message.
+  const unset = (src) => setContact("whatsapp", "")(setContact("email", "")(src));
+  const { page, context, problems } = await openPage(PAGES.studio, { width: 390, height: 844 }, { mobile: true, agencyPatch: unset });
   check("[studio] sticky 'Get a quote' button hidden on the first screen", !(await page.locator("[data-sticky-cta]").evaluate((el) => el.classList.contains("is-visible"))));
   const btn = page.locator("[data-menu-btn]");
   await btn.tap();
@@ -397,7 +411,7 @@ for (const [key, path] of Object.entries(PAGES)) {
   // Email fallback configured
   const { page, context, problems } = await openPage(PAGES.studio, { width: 390, height: 844 }, {
     mobile: true,
-    agencyPatch: (src) => src.replace('email: "",', 'email: "hello@example.com",'),
+    agencyPatch: setContact("email", "hello@example.com"),
   });
   check("[studio] contact options show the configured email", (await page.locator(".contact-option").first().getAttribute("href")) === "mailto:hello@example.com");
   await page.fill("#f-name", "Jane Doe");
@@ -409,6 +423,183 @@ for (const [key, path] of Object.entries(PAGES)) {
   await page.waitForTimeout(300);
   check("[studio] without an endpoint the form hands off to the email app", /press Send/.test(await page.textContent("[data-form-done]")));
   check("[studio] email hand-off causes no page errors", problems.filter((p) => !/mailto/.test(p)).length === 0, problems.join(" | "));
+  await context.close();
+}
+{
+  // WhatsApp: contact option, footer link, QR code (computers only) and the form's contact choice
+  const { page, context, problems } = await openPage(PAGES.studio, { width: 1280, height: 800 });
+  const wa = whatsappLink(await page.evaluate(() => window.AGENCY_CONFIG.contact.whatsapp || ""));
+  if (wa) {
+    const option = page.locator(".contact-option", { hasText: "WhatsApp" });
+    check("[studio] WhatsApp contact option opens your WhatsApp link in a new tab",
+      (await option.getAttribute("href")) === wa && (await option.getAttribute("target")) === "_blank");
+    check("[studio] footer links to WhatsApp", (await page.locator(".footer__contact a", { hasText: "WhatsApp" }).getAttribute("href")) === wa);
+    const qr = page.locator(".qr-card img");
+    await qr.scrollIntoViewIfNeeded();
+    check("[studio] WhatsApp QR code is shown on a computer", await qr.isVisible());
+    await page.addScriptTag({ path: JSQR_PATH });
+    const decoded = await qr.evaluate(async (img) => {
+      const size = 400;
+      const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, size, size);
+      await img.decode();
+      ctx.drawImage(img, 0, 0, size, size);
+      return window.jsQR(ctx.getImageData(0, 0, size, size).data, size, size)?.data || "";
+    });
+    check("[studio] QR code scans to your WhatsApp link", decoded === wa, decoded || "not readable");
+  } else {
+    check("[studio] no WhatsApp link set, so no WhatsApp button or QR code", (await page.locator(".contact-option, .qr-card", { hasText: "WhatsApp" }).count()) === 0);
+  }
+  check("[studio] no console errors (desktop)", problems.length === 0, problems.join(" | "));
+  await context.close();
+
+  const phone = await openPage(PAGES.studio, { width: 390, height: 844 }, { mobile: true });
+  check("[studio] QR code is hidden on phones (they tap the WhatsApp button instead)", !(await phone.page.locator(".qr-card").isVisible()));
+  await phone.page.fill("#f-name", "Jane Doe");
+  await phone.page.fill("#f-business", "Jane's Diner");
+  await phone.page.selectOption("#f-type", "Restaurant, café or bakery");
+  await phone.page.locator('input[value="WhatsApp"]').check();
+  await phone.page.locator("[data-submit]").tap();
+  check("[studio] choosing WhatsApp as the reply method requires a phone number",
+    (await phone.page.getAttribute("#f-phone", "aria-invalid")) === "true" && /WhatsApp number/.test(await phone.page.textContent("[data-phone-hint]")));
+  await phone.context.close();
+}
+
+// ---------------------------------------------------------------------------
+// 3d. Chat assistant on the Bright Site Tech website
+// ---------------------------------------------------------------------------
+{
+  const { page, context, problems } = await openPage(PAGES.studio, { width: 390, height: 844 }, { mobile: true });
+  const cfg = await page.evaluate(() => window.AGENCY_CONFIG);
+  const wa = whatsappLink(cfg.contact.whatsapp);
+  const launcher = page.locator("[data-assistant-launcher]");
+  const panel = page.locator("#assistant");
+  const lastBot = () => page.locator(".msg--bot:not(.msg--typing)").last();
+  const botSays = (text) => page.locator(".msg--bot .msg__bubble", { hasText: text }).last().waitFor({ timeout: 3000 }).then(() => true, () => false);
+  const askTyped = async (q) => {
+    await page.fill("#assistant-input", q);
+    await page.press("#assistant-input", "Enter");
+  };
+
+  const lb = await launcher.boundingBox();
+  check("[assistant] 'Questions?' button is on screen and at least 44×44 px", (await launcher.isVisible()) && lb.width >= 44 && lb.height >= 44, `${lb.width}×${lb.height}`);
+  await page.evaluate(() => document.getElementById("industries").scrollIntoView());
+  await page.waitForTimeout(500);
+  const overlap = await page.evaluate(() => {
+    const a = document.querySelector("[data-assistant-launcher]").getBoundingClientRect();
+    const b = document.querySelector("[data-sticky-cta]").getBoundingClientRect();
+    return !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
+  });
+  check("[assistant] button sits beside the sticky 'Get a quote' bar without overlapping it", !overlap);
+
+  await launcher.tap();
+  const box = await panel.boundingBox();
+  check("[assistant] opens full-screen on phones", (await panel.isVisible()) && box.width === 390 && box.height >= 800, JSON.stringify(box));
+  check("[assistant] focus moves into the chat and the page behind becomes inert",
+    await page.evaluate(() => document.getElementById("assistant").contains(document.activeElement) && document.querySelector("main").inert === true));
+  check("[assistant] greets the visitor and says it's automated",
+    (await page.locator(".msg--bot .msg__bubble").first().textContent()) === cfg.assistant.greeting && /automated/i.test(await page.textContent(".assistant__note")));
+  const chips = await page.locator(".assistant__chip").allTextContents();
+  const chipBox = await page.locator(".assistant__chip").first().boundingBox();
+  check("[assistant] suggests questions as buttons at least 44 px tall", chips.length >= 4 && chipBox.height >= 44, chips.join(" | "));
+
+  await page.locator(".assistant__chip", { hasText: "What does a website cost?" }).tap();
+  const prices = cfg.packages.map((p) => p.price);
+  await botSays(prices[0]);
+  const priceText = await lastBot().textContent();
+  check("[assistant] price answer lists every package from agency.config.js", prices.every((p) => priceText.includes(p)), prices.join(", "));
+
+  const starter = cfg.packages[0];
+  for (const [question, expected] of [
+    ["How long does it take?", "5 business days"],
+    ["can customers book appointments online", "DoorDash"],
+    ["do you work with plumbers", "We design websites for"],
+    [`what's included in the ${starter.name.split(" ")[0].toLowerCase()} package`, starter.includes[0]],
+    ["Where are you located?", "Philippines"],
+    ["Will I rank first on google", "No one can honestly promise that"],
+  ]) {
+    await askTyped(question);
+    check(`[assistant] "${question}" → answer mentions "${expected}"`, await botSays(expected));
+  }
+
+  await askTyped("Can you fix my printer?");
+  const fell = await botSays("a person can help");
+  const waBtn = lastBot().locator("a", { hasText: "WhatsApp" });
+  const waHref = (await waBtn.count()) ? await waBtn.getAttribute("href") : "";
+  check("[assistant] questions it can't answer go to a person (your WhatsApp link)", fell && waHref === wa, waHref || "(no WhatsApp button)");
+  check("[assistant] …or by email, with the question filled in",
+    !cfg.contact.email || /subject=.*body=Can%20you%20fix/.test((await lastBot().locator('a[href^="mailto:"]').getAttribute("href")) || ""));
+  await lastBot().locator("[data-to-form]").tap();
+  await waitForScrollEnd(page);
+  const formState = await page.evaluate(() => ({
+    open: !document.getElementById("assistant").hidden,
+    message: document.getElementById("f-message").value,
+    inert: document.querySelector("main").inert,
+  }));
+  check("[assistant] 'Add my question to the quote form' copies it into the form and closes the chat",
+    !formState.open && formState.message.includes("fix my printer") && !formState.inert, JSON.stringify(formState));
+
+  await launcher.tap();
+  check("[assistant] reopening keeps the conversation", (await page.locator(".msg--user").count()) >= 8);
+  await page.keyboard.press("Escape");
+  check("[assistant] Escape closes the chat and returns focus to the button",
+    !(await panel.isVisible()) && (await page.evaluate(() => document.activeElement.hasAttribute("data-assistant-launcher"))));
+
+  const featured = cfg.packages.find((p) => p.featured) || cfg.packages[1];
+  await launcher.tap();
+  await askTyped(`What's in the ${featured.name}?`);
+  await botSays(featured.includes[0]);
+  await lastBot().locator("a", { hasText: `Ask about ${featured.name}` }).tap();
+  await waitForScrollEnd(page);
+  check(`[assistant] 'Ask about ${featured.name}' closes the chat and pre-selects it in the form`,
+    !(await panel.isVisible()) && (await page.locator(`input[name="package"][value^="${featured.name}"]`).isChecked()));
+
+  await launcher.tap();
+  await page.locator(".assistant__chip").first().tap();
+  await page.waitForTimeout(600);
+  const axe = await runAxe(page);
+  check("[assistant] axe-core accessibility scan with the chat open: 0 violations (phone)", axe.length === 0, axe.join(" | "));
+  check("[assistant] no console errors", problems.length === 0, problems.join(" | "));
+  await page.screenshot({ path: fileURLToPath(new URL("assistant-phone.png", OUT)) });
+  await context.close();
+}
+{
+  const { page, context } = await openPage(PAGES.studio, { width: 320, height: 640 }, { mobile: true });
+  await page.locator("[data-assistant-launcher]").tap();
+  await page.locator(".assistant__chip", { hasText: "Talk to a person" }).tap();
+  await page.waitForTimeout(700);
+  const cut = await page.evaluate(() => {
+    const w = document.documentElement.clientWidth;
+    return [...document.querySelectorAll("#assistant *")]
+      .filter((el) => { const r = el.getBoundingClientRect(); return r.width && (r.right > w + 1 || r.left < -1); })
+      .map((el) => `${el.tagName.toLowerCase()}.${el.className}`).slice(0, 5);
+  });
+  check("[assistant] nothing in the chat is cut off on a 320 px phone", cut.length === 0, cut.join(", "));
+  await page.screenshot({ path: fileURLToPath(new URL("assistant-phone-320.png", OUT)) });
+  await context.close();
+}
+{
+  const { page, context, problems } = await openPage(PAGES.studio, { width: 1280, height: 800 });
+  check("[assistant] desktop button shows the 'Questions?' label", await page.locator(".assistant-launcher__label").isVisible());
+  await page.locator("[data-assistant-launcher]").click();
+  const box = await page.locator("#assistant").boundingBox();
+  check("[assistant] desktop chat opens as a side panel and the page stays usable",
+    box.width <= 420 && box.x > 600 && !(await page.evaluate(() => document.querySelector("main").inert)), JSON.stringify(box));
+  await page.locator(".assistant__chip", { hasText: "Can I see examples?" }).click();
+  await page.locator(".msg--bot a", { hasText: "Copperline" }).waitFor({ timeout: 3000 }).catch(() => {});
+  check("[assistant] 'Can I see examples?' links to every sample design",
+    (await page.locator(".msg--bot:last-of-type .msg__bubble a").count()) === (await page.evaluate(() => window.AGENCY_CONFIG.portfolio.length)));
+  const axe = await runAxe(page);
+  check("[assistant] axe-core accessibility scan with the chat open: 0 violations (desktop)", axe.length === 0, axe.join(" | "));
+  check("[assistant] no console errors (desktop)", problems.length === 0, problems.join(" | "));
+  await page.screenshot({ path: fileURLToPath(new URL("assistant-desktop.png", OUT)) });
+  await context.close();
+}
+{
+  const { page, context } = await openPage(PAGES.studio, { width: 390, height: 844 }, { mobile: true, agencyPatch: (src) => src.replace("enabled: true", "enabled: false") });
+  check("[assistant] enabled: false hides it completely", (await page.locator("[data-assistant-launcher], #assistant").count()) === 0);
   await context.close();
 }
 

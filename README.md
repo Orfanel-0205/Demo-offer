@@ -4,7 +4,7 @@
 
 Everything for a one-person web design studio that builds mobile-friendly websites for **US restaurants, auto repair shops and other local businesses**:
 
-- **The Bright Site Tech website** ([`site/`](site/)): portfolio, packages (**$149** Starter, **$249** Business, optional **$39/month** updates), FAQ and an easy inquiry form.
+- **The Bright Site Tech website** ([`site/`](site/)): portfolio, packages (**$149** Starter, **$249** Business, optional **$39/month** updates), FAQ, an easy inquiry form, WhatsApp contact with a QR code, and a **chat assistant** that answers common questions instantly.
 - **Two sample designs** for fictional businesses, each a complete, reusable website template:
   - 🍽️ **Harbor & Hearth Kitchen** (restaurant): warm editorial design, filterable menu, live opening hours, reservation/delivery buttons.
   - 🔧 **Copperline Auto Care** (auto repair): bold high-contrast design, services with starting prices, book/quote/text buttons, one-tap calling.
@@ -35,18 +35,20 @@ brand/                             ← logo files (SVG + PNG) and brand guide
 docs/                              ← guides
 videos/                            ← demo videos
 tools/                             ← optional desktop tools: preview server, tests, screenshots, videos
+render.yaml · vercel.json          ← hosting settings (both publish only site/)
 ```
 
 - **One file per business.** Each demo's `config.js` holds the name, colors, fonts, menu or services and prices, hours, address, buttons, photos and text. Change it and the site updates.
 - **Each demo folder is a complete website.** For a paying client, copy the closest demo and publish just that folder (see [guide 3](docs/03-customize-for-a-client.md)).
-- **Your prices live in one place:** `site/agency.config.js`. The home page, the panel under each demo and the video end cards all read from it.
+- **Your prices live in one place:** `site/agency.config.js`. The home page, the chat assistant, the panel under each demo and the video end cards all read from it.
+- **The chat assistant answers from your own content** (packages, FAQ, samples) and hands everything else to you on WhatsApp, by email or through the form. It isn't an AI and costs nothing ([guide 2](docs/02-set-up-the-inquiry-form.md#the-chat-assistant-questions-button)).
 
 ## Guides
 
 | # | Guide | Read when |
 | --- | --- | --- |
-| 1 | [Preview, deploy and test from your phone](docs/01-preview-and-deploy-from-your-phone.md) | First: put the site online |
-| 2 | [Set up the inquiry form](docs/02-set-up-the-inquiry-form.md) | Right after deploying |
+| 1 | [Preview, deploy and test from your phone](docs/01-preview-and-deploy-from-your-phone.md) (Render, or Vercel Pro) | First: put the site online |
+| 2 | [Set up the inquiry form, WhatsApp and the chat assistant](docs/02-set-up-the-inquiry-form.md) | Right after deploying |
 | 3 | [Customize a template for a paying client](docs/03-customize-for-a-client.md) | When someone says yes |
 | 4 | [Connect a client-owned domain](docs/04-connect-a-client-domain.md) | At launch |
 | 5 | [Industry design playbook](docs/05-industry-design-playbook.md) (from the UI UX Pro Max analysis) | Before designing for a new industry |
@@ -61,7 +63,7 @@ tools/                             ← optional desktop tools: preview server, t
 ## Quick start (phone only)
 
 1. **Publish:** sign in to [render.com](https://render.com) with GitHub → **New → Static Site** → pick this repository → **Publish directory** `site` → **Create Static Site**.
-2. **Add your contact details:** on github.com, edit [`site/agency.config.js`](site/agency.config.js) and fill in `contact.email` (a business address). The inquiry form then works immediately by opening the visitor's email app. Add a free Formspree endpoint later for direct delivery ([guide 2](docs/02-set-up-the-inquiry-form.md)).
+2. **Add your contact details:** on github.com, edit [`site/agency.config.js`](site/agency.config.js) and fill in `contact.email` (a business address) and `contact.whatsapp`. The inquiry form then works immediately by opening the visitor's email app. Add a free Formspree endpoint later for direct delivery ([guide 2](docs/02-set-up-the-inquiry-form.md)).
 3. **Share:** your home page is the Render link (`https://…onrender.com`); the samples are at `/demos/restaurant/` and `/demos/auto-repair/`.
 
 ## Packages (edit in `site/agency.config.js`)
@@ -79,10 +81,11 @@ Domain, third-party tools and anything not listed are separate. Scope is confirm
 ```bash
 node tools/serve.mjs                 # preview at http://localhost:8080
 cd tools && npm install
-npm test                             # 190 automated checks across all three sites
+npm test                             # 226 automated checks across all three sites
 node sync-engine.mjs                 # copy engine/ changes into every demo
 node capture-portfolio.mjs           # refresh portfolio screenshots
 node render-brand.mjs                # re-export logo PNGs and the link-preview image
+npm run qr                           # remake the WhatsApp QR code from agency.config.js
 npm run videos                       # re-record the demo videos (needs ffmpeg)
 ```
 

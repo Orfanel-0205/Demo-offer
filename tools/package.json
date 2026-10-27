@@ -1,7 +1,7 @@
 {
   "name": "bright-site-tech-tools",
   "private": true,
-  "description": "Optional desktop tools for Bright Site Tech: preview server, automated checks, engine sync, screenshots, brand exports and demo videos. The websites themselves need none of this.",
+  "description": "Optional desktop tools for Bright Site Tech: preview server, automated checks, engine sync, screenshots, brand exports, WhatsApp QR code and demo videos. The websites themselves need none of this.",
   "type": "module",
   "scripts": {
     "serve": "node serve.mjs",
@@ -9,10 +9,13 @@
     "sync": "node sync-engine.mjs",
     "capture": "node capture-portfolio.mjs",
     "brand": "node render-brand.mjs",
+    "qr": "node make-whatsapp-qr.mjs",
     "videos": "node record-videos.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.14.0",
-    "playwright-core": "^1.64.1"
+    "jsqr": "^1.4.0",
+    "playwright-core": "^1.64.1",
+    "qrcode": "^1.5.4"
   }
 }

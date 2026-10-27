@@ -24,6 +24,14 @@
   function digits(s) {
     return String(s || "").replace(/[^\d+]/g, "");
   }
+  // A WhatsApp link (https://wa.me/…) is used as-is; a bare number becomes one.
+  function whatsappUrl(value) {
+    var v = String(value || "").trim();
+    if (/^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(v)) return v;
+    var n = v.replace(/\D/g, "");
+    return n ? "https://wa.me/" + n : "";
+  }
+  var whatsapp = whatsappUrl(contact.whatsapp);
 
   var ICON = {
     mail: '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="m22 6-10 7L2 6"/>',
@@ -140,7 +148,7 @@
   if (contact.email) options.push({ href: "mailto:" + contact.email, icon: "mail", label: "Email", detail: contact.email });
   if (contact.phoneLink) options.push({ href: "tel:" + digits(contact.phoneLink), icon: "phone", label: "Call", detail: contact.phoneDisplay });
   if (contact.phoneLink) options.push({ href: "sms:" + digits(contact.phoneLink), icon: "message", label: "Text", detail: contact.phoneDisplay });
-  if (contact.whatsapp) options.push({ href: "https://wa.me/" + digits(contact.whatsapp).replace("+", ""), icon: "message", label: "WhatsApp", detail: "Chat with us", external: true });
+  if (whatsapp) options.push({ href: whatsapp, icon: "message", label: "WhatsApp", detail: "Chat with us", external: true });
 
   var optionsEl = $("[data-contact-options]");
   if (optionsEl) {
@@ -152,13 +160,20 @@
           (o.external ? '<span class="sr-only">(opens in a new tab)</span>' : "") + "</a>"
         );
       })
-      .join("") + (options.length && contact.hours ? '<p class="contact-hours">' + esc(contact.hours) + "</p>" : "");
+      .join("") +
+      // Visitors on a computer scan this with their phone (hidden on phones by CSS).
+      (whatsapp && contact.whatsappQr
+        ? '<figure class="qr-card"><img src="' + esc(contact.whatsappQr) + '" alt="QR code to chat with ' + esc(A.name) + ' on WhatsApp" width="132" height="132" />' +
+          "<figcaption><strong>On a computer?</strong> Scan this with your phone&rsquo;s camera to chat with us on WhatsApp.</figcaption></figure>"
+        : "") +
+      (options.length && contact.hours ? '<p class="contact-hours">' + esc(contact.hours) + "</p>" : "");
   }
   var footerContact = $("[data-footer-contact]");
   if (footerContact) {
     footerContact.innerHTML =
       (contact.email ? '<p><a href="mailto:' + esc(contact.email) + '">' + esc(contact.email) + "</a></p>" : "") +
       (contact.phoneLink ? '<p><a href="tel:' + esc(digits(contact.phoneLink)) + '">' + esc(contact.phoneDisplay) + "</a></p>" : "") +
+      (whatsapp ? '<p><a href="' + esc(whatsapp) + '" target="_blank" rel="noopener">WhatsApp<span class="sr-only"> (opens in a new tab)</span></a></p>' : "") +
       (contact.hours ? "<p>" + esc(contact.hours) + "</p>" : "");
   }
   var replyTime = $("[data-reply-time]");
@@ -232,7 +247,7 @@
     if (setError(f.business, "f-business-err", !f.business.value.trim())) bad.push(f.business);
     if (setError(f.business_type, "f-type-err", !f.business_type.value)) bad.push(f.business_type);
     if (setError(null, "f-method-err", !m)) bad.push($('input[name="contact_method"]', form));
-    var needPhone = m === "Phone call" || m === "Text message";
+    var needPhone = m === "Phone call" || m === "Text message" || m === "WhatsApp";
     var phoneBad = (needPhone && phoneDigits.length < 10) || (f.phone.value.trim() && phoneDigits.length < 10);
     if (setError(f.phone, "f-phone-err", phoneBad)) bad.push(f.phone);
     var emailBad = (m === "Email" && !emailOk) || (f.email.value.trim() && !emailOk);
@@ -321,7 +336,7 @@
   form.addEventListener("change", function (e) {
     if (e.target.name === "contact_method") {
       var m = method();
-      $("[data-phone-hint]").textContent = m === "Email" ? "(optional)" : "(required for calls or texts)";
+      $("[data-phone-hint]").textContent = m === "Email" ? "(optional)" : m === "WhatsApp" ? "(your WhatsApp number, required)" : "(required for calls or texts)";
       $("[data-email-hint]").textContent = m === "Email" ? "(required)" : "(optional)";
     }
   });

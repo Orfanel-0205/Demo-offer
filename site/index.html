@@ -182,39 +182,39 @@
             <h2 id="faq-title">Questions owners usually ask</h2>
           </header>
           <div class="faq">
-            <details>
+            <details data-topic="own" data-keywords="own owns owned owner ownership domain files copy transfer rights mine">
               <summary>Do I own the website and the domain?</summary>
               <p>Yes. Your domain is registered in your name and your content is yours. After full payment you can ask for a copy of your site files at any time.</p>
             </details>
-            <details>
+            <details data-topic="needs" data-keywords="need provide send content photos pictures checklist information details prepare">
               <summary>What do you need from me?</summary>
               <p>Your business name, address, phone, opening hours, menu or list of services with prices, a few photos you own, your logo if you have one, and links to any booking, ordering or social pages. We send a checklist.</p>
             </details>
-            <details>
+            <details data-topic="timeline" data-keywords="long time fast quick days weeks timeline turnaround ready deadline soon">
               <summary>How long does it take?</summary>
               <p>You usually get a preview link within 5 business days of sending us everything. Launch happens as soon as you approve it.</p>
             </details>
-            <details>
+            <details data-topic="payments" data-keywords="pay paying payment paypal wise deposit upfront half installment invoice card">
               <summary>How do payments work?</summary>
               <p>Half to start and half after you approve the preview, before your domain is connected. We agree on the payment method &mdash; for example PayPal or Wise &mdash; in writing.</p>
             </details>
-            <details>
+            <details data-topic="integrations" data-keywords="order orders ordering online booking bookings book reservation reservations appointment appointments checkout doordash uber toast square opentable ecommerce sell delivery">
               <summary>Can the site take online orders, bookings or payments?</summary>
               <p>We link your site to services you already use or choose, such as DoorDash, Toast, OpenTable or Square Appointments. We don&rsquo;t build payment or ordering systems ourselves.</p>
             </details>
-            <details>
+            <details data-topic="results" data-keywords="seo google rank ranking customers traffic guarantee guaranteed results search first leads sales">
               <summary>Will a website get me more customers or put me first on Google?</summary>
               <p>No one can honestly promise that. A website puts accurate information in one place you control and makes it easier for people who are already looking for you. We set up the basics search engines read, like page titles and business details.</p>
             </details>
-            <details>
+            <details data-topic="hosting" data-keywords="hosting host hosted server free renewal monthly hidden fees">
               <summary>Is hosting really free?</summary>
               <p>For simple sites like these we use free static hosting where the provider&rsquo;s terms allow it. If anything will cost money &mdash; your domain, a booking tool, or a hosting upgrade &mdash; we tell you before you commit.</p>
             </details>
-            <details>
+            <details data-topic="location" data-keywords="where based located location philippines country remote who team english timezone">
               <summary>Where are you based?</summary>
               <p>Bright Site Tech is a small studio based in the Philippines, working remotely with US businesses. Calls are scheduled during your business hours.</p>
             </details>
-            <details>
+            <details data-topic="after-launch" data-keywords="after launch changes change update updates edit edits maintenance support later">
               <summary>What happens after launch?</summary>
               <p>You can request changes as one-off jobs, or choose the optional Website Updates plan for small monthly changes like menu prices and hours.</p>
             </details>
@@ -271,15 +271,16 @@
                 <label class="choice"><input type="radio" name="contact_method" value="Phone call" required /> <span>Phone call</span></label>
                 <label class="choice"><input type="radio" name="contact_method" value="Text message" /> <span>Text</span></label>
                 <label class="choice"><input type="radio" name="contact_method" value="Email" /> <span>Email</span></label>
+                <label class="choice"><input type="radio" name="contact_method" value="WhatsApp" /> <span>WhatsApp</span></label>
               </div>
               <p class="field__error" id="f-method-err" hidden>Please choose how we should reach you.</p>
             </fieldset>
 
             <div class="field-row">
               <div class="field">
-                <label for="f-phone">Phone <span class="field__hint" data-phone-hint>(for calls or texts)</span></label>
+                <label for="f-phone">Phone <span class="field__hint" data-phone-hint>(for calls, texts or WhatsApp)</span></label>
                 <input id="f-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" aria-describedby="f-phone-err" />
-                <p class="field__error" id="f-phone-err" hidden>Please enter a phone number we can call or text.</p>
+                <p class="field__error" id="f-phone-err" hidden>Please enter a phone number we can call, text or WhatsApp.</p>
               </div>
               <div class="field">
                 <label for="f-email">Email <span class="field__hint" data-email-hint>(for email replies)</span></label>
@@ -354,11 +355,12 @@
       </div>
     </footer>
 
-    <aside aria-label="Quick contact">
+    <aside aria-label="Quick contact" data-quick-contact>
       <a href="#inquire" class="sticky-cta" data-sticky-cta>Get a quote</a>
     </aside>
 
     <script src="agency.config.js"></script>
     <script src="assets/js/site.js"></script>
+    <script src="assets/js/assistant.js"></script>
   </body>
 </html>

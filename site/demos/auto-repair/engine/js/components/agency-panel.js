@@ -17,6 +17,9 @@
       var link = config.demoAgency || {};
       if (!config.demoMode || !agency) return "";
       var base = link.siteUrl || "../../";
+      // Same rule as the studio site: a WhatsApp link is used as-is, a bare number becomes one.
+      var wa = String((agency.contact || {}).whatsapp || "").trim();
+      var whatsapp = /^https:\/\/(wa\.me|api\.whatsapp\.com)\//.test(wa) ? wa : wa.replace(/\D/g, "") ? "https://wa.me/" + wa.replace(/\D/g, "") : "";
 
       var cards = (agency.packages || []).map(function (p) {
         return html`<article class="package${p.featured ? " package--featured" : ""}" aria-labelledby="pkg-${p.id}">
@@ -45,6 +48,7 @@
             <a class="agency__btn agency__btn--primary" href="${base}#inquire">Ask about your business</a>
             <a class="agency__btn" href="${base}#packages">See what each package includes</a>
             <a class="agency__btn" href="${base}#work">More sample designs</a>
+            ${whatsapp ? RL.externalLink(whatsapp, "Chat on WhatsApp", "agency__btn") : ""}
           </div>
 
           <p class="agency__fine">${(agency.disclosures || []).slice(0, 2).join(" ")}</p>

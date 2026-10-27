@@ -16,7 +16,8 @@ Everything is in one file: [`site/agency.config.js`](../site/agency.config.js).
      email: "hello@yourbusiness.com",
      phoneDisplay: "",
      phoneLink: "",
-     whatsapp: "",
+     whatsapp: "https://wa.me/qr/…",
+     whatsappQr: "assets/img/whatsapp-qr.svg",
      hours: "Calls and messages during US business hours, Monday to Friday.",
    },
    ```
@@ -31,8 +32,8 @@ Everything is in one file: [`site/agency.config.js`](../site/agency.config.js).
 
 ### Optional contact buttons
 
-- `phoneDisplay` / `phoneLink`: shows **Call** and **Text** buttons. Only add a number you can answer. Calls from the US to a Philippine number are international for the caller.
-- `whatsapp`: digits only with country code (e.g. `"639171234567"`). Shows a **WhatsApp** button, which is free for the visitor.
+- `phoneDisplay` / `phoneLink`: shows **Call** and **Text** buttons. Add the US number from your calling service once you have one, e.g. `"(555) 010-0000"` and `"+15550100000"`. Only add a number you can answer. A Philippine number would make every call from the US international for the caller.
+- `whatsapp`: shows a **WhatsApp** button, a WhatsApp link in the footer and a QR code. See [WhatsApp](#whatsapp) below.
 
 ---
 
@@ -60,6 +61,50 @@ Everything is in one file: [`site/agency.config.js`](../site/agency.config.js).
 **Get notified on your phone:** install the Gmail app (or your email app) and turn on notifications for that inbox.
 
 **Reply time:** edit `replyTime` to something you can always keep. It's a promise to prospects.
+
+---
+
+## WhatsApp
+
+`contact.whatsapp` takes either:
+
+- **the link from your WhatsApp QR code**, e.g. `"https://wa.me/qr/BATWZA4GHVGJG1"`. This opens a chat with you without showing your number on the page (WhatsApp shows it once they message you). Or
+- **your number**, digits only with country code, e.g. `"639171234567"`.
+
+Where it appears:
+
+- **On phones:** a **WhatsApp** contact button next to the form, in the footer, in the chat assistant and in the panel under each sample design. Tapping it opens the WhatsApp app.
+- **On computers:** also a **QR code** next to the form (`contact.whatsappQr`). Visitors scan it with their phone. It's hidden on phones because nobody can scan their own screen.
+- **In the form:** visitors can pick **WhatsApp** as the way you should reply, and must then enter their number.
+
+**If your WhatsApp link changes** (for example after *Reset QR code* in WhatsApp), update `contact.whatsapp` *and* replace the QR image. Either run `cd tools && npm run qr` on a computer, or upload a screenshot of your new WhatsApp QR code to `site/assets/img/` and point `whatsappQr` at it. The automated tests check that the QR code scans to the same link as the button.
+
+**Good to know:**
+
+- WhatsApp is common in the Philippines but **less common among US business owners**, many of whom prefer a phone call, a text or email. Keep your email visible, and add a US number when you have one.
+- Consider the free **WhatsApp Business** app, with your logo (`brand/png/profile-1024.png`), the name *Bright Site Tech*, your hours and an away message. Owners who scan your code then see your business, not your personal profile.
+
+---
+
+## The chat assistant ("Questions?" button)
+
+Your website has a chat button in the bottom-right corner. It opens a small chat that answers common questions instantly:
+
+- **prices and what each package includes**, from `packages` in `agency.config.js`;
+- **which package fits**, as a two-question guide;
+- **every FAQ answer**, from the FAQ section of `site/index.html`;
+- **the industries you serve** and **how it works**, from those sections of the page;
+- **sample designs**, from `portfolio`.
+
+Visitors can tap suggested questions or type their own. When it doesn't know an answer, it says so and offers **WhatsApp**, **email** (with the question already filled in), or **"Add my question to the quote form"**.
+
+**How it works, honestly:** it's not an AI. It matches the words in a question to your own answers, so it can only say what your website already says. It never invents a price, a promise or a date, costs nothing, needs no API key, and nothing a visitor types leaves their browser. It's labelled *"Automated answers"* so nobody thinks they're talking to a person.
+
+**Changing its answers:** edit the FAQ, packages or sections. The assistant uses them automatically. To add a new FAQ answer, copy one of the `<details …>` blocks in the FAQ section of `site/index.html`, change the question and answer, and put the words people might type in `data-keywords` (for example `data-keywords="spanish language translate"`).
+
+**Settings** (in `agency.config.js` → `assistant`): `name`, the `greeting`, and `enabled: false` to switch it off.
+
+> **Want a real AI assistant later?** It's possible, but it needs a server function with an API key kept secret, which this static site doesn't have. You'd pay for usage, and you'd need limits so it can't be abused or make promises you can't keep. Revisit once you have paying clients.
 
 ---
 

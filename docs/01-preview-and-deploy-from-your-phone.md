@@ -38,6 +38,21 @@ Everything here works from an Android phone with Chrome. You don't need a comput
 
 > **Important:** the publish directory must be `site`. If you publish the whole repository by mistake, the sales scripts in `docs/` would become public web pages.
 
+### Publishing on Vercel instead
+
+The repository also includes [`vercel.json`](../vercel.json), which tells Vercel to publish only the `site/` folder, with no build step, and to send the same security headers as on Render.
+
+> **Check the plan first.** Vercel's free **Hobby** plan is for *personal, non-commercial use only*. Its fair-use rules (checked October 2026) count "advertising the sale of a product or service" and "receiving payment to create, update, or host the site" as commercial use. Your Bright Site Tech website advertises your services, and client websites are paid work. On Vercel, both need the **Pro** plan ($20 a month). Render's free static sites have no such rule, which is why this kit uses Render by default.
+
+If you choose Vercel Pro:
+
+1. In Chrome, go to **[vercel.com](https://vercel.com)** → **Sign Up** → **Continue with GitHub**.
+2. **Add New…** → **Project** → **Import** next to **Demo-offer**.
+3. Leave the settings as they are. `vercel.json` already sets *Framework: Other*, no build command and output directory `site`. Tap **Deploy**.
+4. Your site appears at `https://<project-name>.vercel.app`, with the samples at `/demos/restaurant/` and `/demos/auto-repair/`. Every change you commit on GitHub republishes it, and pull requests get preview links.
+
+Use **one** host for your live site. If you try both, delete the one you don't keep, so two copies of your site aren't online.
+
 ---
 
 ## B. Edit the site from your phone
